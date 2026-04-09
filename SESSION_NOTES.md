@@ -9,35 +9,30 @@ HuggingFace model: stuSterfc/ohs-severity-classifier
 
 ## Session Log
 
-### Session 1 — 2026-04-08
+### Session 2 — 2026-04-09
 **Status at end of session:**
-Repository initialised locally. Folder structure created. Core config files in place. Not yet pushed to GitHub.
+Repository pushed to GitHub. Virtual environment created and activated. Feature branch not yet created — stopped for AWS study.
 
 **Completed this session:**
-- Ran prerequisite checklist against build brief
-- Created GitHub repository at stuartclark-ml/rag-triage-api
-- Initialised local Git repository at /home/stuart/rag-triage-api
-- Created full folder structure
-- Created .gitignore
-- Created .env.example
-- Created SESSION_NOTES.md
-- Covered concepts: Git init, folder structure, here documents, .gitignore, .env vs .env.example, FastAPI, Pydantic
+- Fixed .env.example placeholder to pass GitHub secret scanning
+- Amended first commit and pushed successfully to GitHub
+- Installed python3.12-venv
+- Created and activated .venv virtual environment
+- Covered concepts: git push protection, amend commit, virtual environments, branches and professional Git workflow
 
 **Next session starts at:**
-First commit and push to GitHub, then Python venv setup, then requirements.txt
+Create feature/project-setup branch, then requirements.txt, then config.py, then models.py
 
 **Blockers or open questions:**
 - HSG220 is a priced HSE publication — confirm copy available before RAG build session
 - H&C OSHA CSV location in WSL2 to be confirmed before Tool 5 build session
+- Python version is 3.12.3 not 3.11 — update all documentation to reflect this
 
 **Commands run this session:**
-- cd /home/stuart/rag-triage-api
-- git init -b main
-- mkdir -p app/agent app/tools rag data vectorstore streamlit_app tests .github/workflows
-- touch app/__init__.py app/agent/__init__.py app/tools/__init__.py rag/__init__.py streamlit_app/__init__.py tests/__init__.py
-- cat > .gitignore
-- cat > .env.example
-- cat > SESSION_NOTES.md
+- git push -u origin main
+- sudo apt install python3.12-venv
+- python3 -m venv .venv
+- source .venv/bin/activate
 
 ---
 
@@ -48,6 +43,7 @@ First commit and push to GitHub, then Python venv setup, then requirements.txt
 | Branch naming | main | Matches GitHub default, avoids mismatch | 1 |
 | Folder structure | app/agent/tools/rag/data/vectorstore | Separation of concerns, one tool per file | 1 |
 | Secrets management | .env never committed, .env.example committed | Production standard practice | 1 |
+| Python version | 3.12.3 | System version available, all libraries support it | 2 |
 
 ---
 
@@ -62,7 +58,7 @@ First commit and push to GitHub, then Python venv setup, then requirements.txt
 
 ## Environment
 - OS: WSL2 Ubuntu
-- Python: 3.11
+- Python: 3.12.3
 - Working directory: /home/stuart/rag-triage-api
 - Remote: https://github.com/stuartclark-ml/rag-triage-api.git
 
