@@ -1,70 +1,37 @@
-# SESSION NOTES — rag-triage-api
-
-## Project
-Risk Event Classification and Regulatory Mapping System
-Domain: Health and Social Care care home settings only
-HuggingFace model: stuSterfc/ohs-severity-classifier
-
----
-
-## Session Log
-
-### Session 2 — 2026-04-09
+### Session 3 — 2026-04-10
 **Status at end of session:**
-Repository pushed to GitHub. Virtual environment created and activated. Feature branch not yet created — stopped for AWS study.
+CI pipeline live on GitHub Actions. config.py working and committed. pytest placeholder in place.
 
 **Completed this session:**
-- Fixed .env.example placeholder to pass GitHub secret scanning
-- Amended first commit and pushed successfully to GitHub
-- Installed python3.12-venv
-- Created and activated .venv virtual environment
-- Covered concepts: git push protection, amend commit, virtual environments, branches and professional Git workflow
+- Debugged venv activation issue
+- Switched from Python 3.11 to 3.12.3
+- Installed pip-tools and chose it over pip freeze for professional dependency management
+- Created requirements.in with direct dependencies only
+- Generated requirements.txt via pip-compile
+- Replaced CUDA torch with CPU-only build
+- Verified torch installation
+- Created app/config.py with pydantic-settings
+- Tested config.py loads correctly from .env
+- Created .github/workflows/ci.yml
+- Fixed mypy errors with mypy.ini and pydantic plugin
+- Added pytest.ini and placeholder test
+- Created ml-engineering-interview-prep repository with INTERVIEW_PREP.md
 
 **Next session starts at:**
-Create feature/project-setup branch, then requirements.txt, then config.py, then models.py
+models.py — Pydantic request and response schemas
 
 **Blockers or open questions:**
-- HSG220 is a priced HSE publication — confirm copy available before RAG build session
-- H&C OSHA CSV location in WSL2 to be confirmed before Tool 5 build session
-- Python version is 3.12.3 not 3.11 — update all documentation to reflect this
+- HSG220 PDF availability still unconfirmed
+- H&C OSHA CSV location in WSL2 still unconfirmed
+- pytest placeholder test should be replaced when real tests are written
 
 **Commands run this session:**
-- git push -u origin main
-- sudo apt install python3.12-venv
-- python3 -m venv .venv
-- source .venv/bin/activate
-
----
-
-## Architecture Decisions Log
-
-| Decision | Choice | Reason | Session |
-|---|---|---|---|
-| Branch naming | main | Matches GitHub default, avoids mismatch | 1 |
-| Folder structure | app/agent/tools/rag/data/vectorstore | Separation of concerns, one tool per file | 1 |
-| Secrets management | .env never committed, .env.example committed | Production standard practice | 1 |
-| Python version | 3.12.3 | System version available, all libraries support it | 2 |
-
----
-
-## Known Issues and Workarounds
-| Issue | Workaround | Status |
-|---|---|---|
-| Needlestick blind spot in BERT model | Hard-coded flag in Tool 2 | Permanent by design |
-| Org size prefix spurious correlation | Strip prefix before all embeddings | Permanent by design |
-| OSHA data is US proxy for UK | Disclaimer on all RIDDOR output | Permanent by design |
-
----
-
-## Environment
-- OS: WSL2 Ubuntu
-- Python: 3.12.3
-- Working directory: /home/stuart/rag-triage-api
-- Remote: https://github.com/stuartclark-ml/rag-triage-api.git
-
----
-
-## Domain Constraint — Non-Negotiable
-Model trained on H&C OSHA care home data only.
-Not validated outside this domain.
-This must be stated in all documentation, UI, and API responses.
+- python3 -m venv venv
+- source venv/bin/activate
+- pip install pip-tools
+- pip-compile requirements.in
+- pip config set global.timeout 300
+- pip-sync requirements.txt
+- python -c "import torch; print(torch.__version__); print(torch.cuda.is_available())"
+- python -c "from app.config import get_settings; ..."
+- mkdir -p .github/workflows
