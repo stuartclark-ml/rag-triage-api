@@ -1,3 +1,27 @@
+### Session 4 — 2026-04-15
+**Status at end of session:**
+Foundation complete. API skeleton running and verified. All source documents in place.
+
+**Completed this session:**
+- app/models.py — all Pydantic request and response schemas
+- main.py — FastAPI skeleton with health check and triage endpoint
+- API verified running at localhost:8000/docs
+- Domain constraint validated — rejects confirmed_hc_domain: false correctly
+- SHAP decision made — offline notebook in shap_analysis/, not in live API
+- validate_domain tool removed — domain constraint handled architecturally
+- Source documents cleaned and organised in data/
+- Org size prefix strip strategy confirmed for RAG ingestion
+
+**Next session starts at:**
+RAG build scripts — ingesting RIDDOR 2013, HSG220, and OSHA CSV into ChromaDB
+
+**Open items resolved:**
+- HSG220 confirmed — data/documents/hsg220.pdf
+- OSHA CSV confirmed — data/csv/osha_hc_incidents.csv
+
+**Blockers or open questions:**
+- None — all documents confirmed, ready for RAG build
+
 ### Session 3 — 2026-04-10
 **Status at end of session:**
 CI pipeline live on GitHub Actions. config.py working and committed. pytest placeholder in place.
