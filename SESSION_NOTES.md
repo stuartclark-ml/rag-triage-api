@@ -1,3 +1,25 @@
+### Session 5 — 2026-04-16
+**Status at end of session:**
+HSG220 extraction and chapter splitting complete. ChromaDB ingestion not yet written.
+
+**Completed this session:**
+- Reviewed chunking strategies per document type
+- Decided on page-index based chapter extraction for HSG220
+- Created rag/hsg220_embeddings.py with 14 curated embedding strings
+- Built rag/build_hsg220.py — extracts and splits HSG220 into 14 clean chapters
+- Verified chapter character counts — all 14 chapters credible
+- hsg220_clean.txt written as inspection output
+
+**Next session starts at:**
+ChromaDB ingestion — embedding each HSG220 chapter and storing in vector store
+
+**Open items:**
+- RIDDOR ingestion script not yet started
+- OSHA CSV ingestion script not yet started
+- hsg220_clean.txt is a temporary inspection file — not part of final build
+
+**Commands run this session:**
+- python -m rag.build_hsg220
 ### Session 4 — 2026-04-15
 **Status at end of session:**
 Foundation complete. API skeleton running and verified. All source documents in place.
