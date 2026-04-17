@@ -1,3 +1,27 @@
+### Session 6 — 2026-04-17
+
+**Status at end of session:**
+Ingestion script for HSG220 not yet written. `build_hsg220.py` reviewed line by line and understood. Concept walkthrough complete.
+
+**Completed this session:**
+- Walked through `rag/build_hsg220.py` in detail — imports, constants, extraction function, build function, main, scope resolution
+- Confirmed Python scope rules (LEGB) and why `CHAPTER_EMBEDDINGS` does not need to be a parameter
+- Confirmed `chromadb==1.5.7` and `sentence-transformers==5.4.0` installed in venv
+- Decided ingestion approach: import `build_chapters` from `build_hsg220.py`, embed curated strings manually, store full chapter text as documents, use separate Chroma collection per document
+- Decided on persistent Chroma client with collection-per-document pattern (`hsg220`, `riddor`, `osha_hc`)
+
+**Next session starts at:**
+Write `rag/ingest_hsg220.py` — embed curated strings with sentence-transformers, store full chapter text in persistent ChromaDB collection at `vectorstore/hsg220/`
+
+**Open items:**
+- RIDDOR ingestion script not yet started
+- OSHA CSV ingestion script not yet started
+- `hsg220_clean.txt` is a temporary inspection file — not part of final build
+- First run of sentence-transformer will download ~90MB model to `~/.cache/huggingface/`
+
+**Commands run this session:**
+- `pip list | grep -E "^(chromadb|sentence-transformers)"`
+
 ### Session 5 — 2026-04-16
 **Status at end of session:**
 HSG220 extraction and chapter splitting complete. ChromaDB ingestion not yet written.
