@@ -51,6 +51,7 @@ def build_chapters(pdf_path: Path) -> list[dict]:
             "chapter_key": chapter_key,
             "text": text,
             "embedding_string": CHAPTER_EMBEDDINGS[chapter_key],
+            "pages": f"{start_page + 1}-{end_page}",
         })
     return chapters
 
