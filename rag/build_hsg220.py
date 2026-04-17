@@ -57,7 +57,6 @@ def build_chapters(pdf_path: Path) -> list[dict]:
 
 def main():
     print(f"Opening {PDF_PATH}")
-    doc = fitz.open(PDF_PATH)
     chapters = build_chapters(PDF_PATH)
     print(f"Chapters built: {len(chapters)}")
     for ch in chapters:
