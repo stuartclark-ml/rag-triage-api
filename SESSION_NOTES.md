@@ -1,3 +1,100 @@
+## Session 7 — 2026-04-22
+
+### What was built
+- `rag/build_riddor.py` — RIDDOR 2013 extraction and chunking
+  - `extract_regulations(pdf_path, start_page, end_page)` — page-scoped
+    extraction using line-pair boundary detection (title line followed by
+    number pattern `^\d{1,2}\.[\s\—]`)
+  - `build_chunks(regulations)` — applies hardcoded metadata lookup dict,
+    skips regulations 1 and 2, splits regulation 4 into two chunks
+    (specified injuries / over-seven-day incapacitation), splits regulation
+    11 into two chunks (gas incidents / gas installation faults)
+  - `build_schedule_chunks(categories)` — filters Schedule 2 to 11 retained
+    H&C-relevant categories, attaches parent_regulation, deadline and route
+    inherited from Regulation 7, applies title override for category 22
+- `rag/ingest_riddor.py` — ChromaDB ingestion
+  - Embeds regulation and schedule chunk text directly (no curated embedding
+    string required — RIDDOR text is short enough for MiniLM 256-token limit)
+  - 31 chunks stored: 20 regulation chunks, 11 schedule chunks
+  - Collection name: `riddor`
+  - Vectorstore path: `vectorstore/riddor/`
+
+### Key design decisions made this session
+- Regulation 4 split on phrase `"more than seven consecutive"` to separate
+  specified injury (10-day) and over-seven-day incapacitation (15-day)
+  reporting pathways
+- Regulation 11 split on phrase `"approved person"` to separate gas incident
+  notification (without delay) from gas installation fault report (14 days)
+- Deadline strings carry full obligation — `"Notify without delay, then report
+  within 10 days"` rather than just `"10 days"` — to correctly represent the
+  dual notification and report obligation
+- Schedule 2 omitted categories hardcoded and documented in
+  `OMITTED_SCHEDULE2_NOTE` — explosives block (5–9), diving operations
+  (13–17), train collisions (19)
+- Schedule 1 Part 1 (reporting procedure prose) treated as reference material
+  for building the metadata lookup dict — not stored as a retrievable chunk
+- `vectorstore/riddor/` gitignored by design — build artifact, regenerate
+  with `python3 -m rag.ingest_riddor`
+- `OMITTED_SCHEDULE2` removed as dead code — omission documented in
+  `OMITTED_SCHEDULE2_NOTE` and README instead
+
+### Smoke tests
+- Injury query (`worker fractured wrist after fall from ladder`) — `reg_4a`
+  surfaced at rank 2, `reg_4b` at rank 3. Correct.
+- Dangerous occurrence query (`hoist collapsed while lifting resident in care
+  home`) — `sch2_1` Lifting equipment surfaced at rank 1. Correct.
+  `parent_regulation: "7"` in chunk metadata means `reg_7` does not need to
+  appear in retrieval for Tool 3 to know Regulation 7 applies.
+
+### Commits
+- `feat(riddor): add RIDDOR 2013 extraction, chunking and ChromaDB ingestion`
+  — 2 files, 272 insertions
+
+### Open items carried forward
+- OSHA CSV ingestion not started — next session starting point
+- HSG220 Chapter 2 ranking high for generic queries — revisit after Tool 4
+  integration (carried from Session 6)
+- Retrieval smoke tests used matching sentence-transformer model via
+  `query_embeddings` — consistent with ingestion, correct approach confirmed
+- README not yet updated with RIDDOR omission decisions and Schedule 2
+  scoping rationale — add before final portfolio review
+- `feature/riddor-ingestion` branch open — do not merge until OSHA CSV
+  ingestion is also complete and tested, or cut a PR now and open a new
+  branch for OSHA. Decision deferred to Session 8.
+
+### Session 7 — 2026-04-17
+
+**Status at end of session:**
+HSG220 ingestion complete. Vector store built and retrieval verified. 14 chunks stored in `vectorstore/hsg220/`.
+
+**Completed this session:**
+- Walked through `rag/build_hsg220.py` in detail — imports, constants, extraction function, build function, main, scope resolution
+- Confirmed Python scope rules (LEGB) and why `CHAPTER_EMBEDDINGS` does not need to be a parameter
+- Confirmed `chromadb==1.5.7` and `sentence-transformers==5.4.0` installed in venv
+- Reviewed `rag/ingest_hsg220.py` line by line — `PersistentClient`, collection lifecycle, manual embedding, `add()` call
+- Extended `build_chapters` to include page ranges per chapter
+- Extended ingestion metadata to include chapter and pages for downstream citation
+- Ran `python -m rag.ingest_hsg220` successfully — 14 chunks stored
+- Verified retrieval with ad-hoc query — store is queryable
+- Added interview prep entries for scope and RAG patterns to external repo
+
+**Next session starts at:**
+RIDDOR ingestion script — parallel structure to HSG220 but different chunking strategy (per-regulation rather than per-chapter). Open a new feature branch `feature/riddor-ingestion` before starting.
+
+**Open items:**
+- RIDDOR ingestion script not yet started
+- OSHA CSV ingestion script not yet started
+- `hsg220_clean.txt` is a temporary inspection file — not part of final build (now in `.gitignore`)
+- HSG220 retrieval test: Chapter 2 ranks high for generic incident queries — embedding string may be too broad. Revisit after Tool 4 integration when queries are LLM-extracted cause phrases rather than raw narratives.
+- Retrieval test used Chroma's default ONNX embedding function rather than the sentence-transformer used for ingestion. Acceptable for smoke test. Real Tool 4 must use `query_embeddings` with matching model to guarantee vector-space consistency.
+
+**Commands run this session:**
+- `pip list | grep -E "^(chromadb|sentence-transformers)"`
+- `python -c "from rag.build_hsg220 import build_chapters, PDF_PATH; ..."` (page range sanity check)
+- `python -m rag.ingest_hsg220`
+- `ls -la vectorstore/hsg220/`
+- Ad-hoc Chroma query test
+
 ### Session 6 — 2026-04-17
 
 **Status at end of session:**
