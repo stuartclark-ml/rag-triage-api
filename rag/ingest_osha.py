@@ -104,4 +104,9 @@ def main() -> None:
 
     print(f"\nEmbedding and ingesting {len(records)} records to ChromaDB...")
     CHROMA_PATH.mkdir(parents=True, exist_ok=True)
-    ingest(records, CHROMA_P
+    ingest(records, CHROMA_PATH)
+    print("\nOSHA ingestion complete.")
+
+
+if __name__ == "__main__":
+    main()
