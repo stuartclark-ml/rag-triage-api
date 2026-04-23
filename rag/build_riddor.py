@@ -56,7 +56,7 @@ def extract_regulations(pdf_path: str, start_page: int, end_page: int) -> list[d
 
     return regulations
 
-REG_METADATA = {
+REG_METADATA: dict[str, dict[str, str | None]] = {
     "3":  {"title": "Responsible person",
             "deadline": None, "route": None},
     "4a": {"title": "Non-fatal injuries to workers — specified injuries",
