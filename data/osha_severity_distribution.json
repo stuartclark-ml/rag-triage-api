@@ -1,0 +1,25 @@
+{
+  "total_records": 181375,
+  "severity_distribution": {
+    "0": {
+      "count": 97863,
+      "percentage": 53.96
+    },
+    "1": {
+      "count": 8939,
+      "percentage": 4.93
+    },
+    "2": {
+      "count": 17483,
+      "percentage": 9.64
+    },
+    "3": {
+      "count": 23427,
+      "percentage": 12.92
+    },
+    "4": {
+      "count": 33663,
+      "percentage": 18.56
+    }
+  }
+}
