@@ -152,7 +152,7 @@ def build_chunks(regulations: list[dict]) -> list[dict]:
                 })
             continue
 
-        meta: dict[str, str | None] | None = REG_METADATA.get(number)
+        meta = REG_METADATA.get(number)
         if meta is None:
             continue
 

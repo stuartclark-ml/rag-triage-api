@@ -1,7 +1,6 @@
 import csv
 import json
 from pathlib import Path
-from typing import Any
 
 from sentence_transformers import SentenceTransformer
 import chromadb
@@ -77,7 +76,7 @@ def ingest(records: list[dict], chroma_path: Path) -> None:
         ).tolist()
 
         ids = [f"osha_{batch_start + i}" for i in range(len(batch_narratives))]
-        metadatas: list[dict[str, Any]] = [{"severity_bin": s} for s in batch_severities]
+        metadatas = [{"severity_bin": s} for s in batch_severities]  # type: ignore[arg-type]
 
         collection.add(
             ids=ids,
