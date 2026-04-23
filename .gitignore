@@ -1,6 +1,6 @@
 .env
 vectorstore/
-data/
+data/*
 __pycache__/
 *.pyc
 venv/
@@ -8,3 +8,4 @@ venv/
 .pytest_cache/
 .venv/
 hsg220_clean.txt
+!data/osha_severity_distribution.json

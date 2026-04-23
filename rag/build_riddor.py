@@ -38,7 +38,8 @@ def extract_regulations(pdf_path: str, start_page: int, end_page: int) -> list[d
                     "title": current_title,
                     "text": " ".join(current_lines).strip(),
                 })
-            current_number = re.match(r"^(\d{1,2})\.", line).group(1)
+            number_match = re.match(r"^(\d{1,2})\.", line)
+            current_number = number_match.group(1) if number_match else None
             current_title = prev_line if prev_line else ""
             current_lines = [line]
         else:
@@ -55,7 +56,7 @@ def extract_regulations(pdf_path: str, start_page: int, end_page: int) -> list[d
 
     return regulations
 
-REG_METADATA = {
+REG_METADATA: dict[str, dict[str, str | None]] = {
     "3":  {"title": "Responsible person",
             "deadline": None, "route": None},
     "4a": {"title": "Non-fatal injuries to workers — specified injuries",
@@ -151,17 +152,16 @@ def build_chunks(regulations: list[dict]) -> list[dict]:
                 })
             continue
 
-        meta = REG_METADATA.get(number)
-        if meta is None:
+        reg_meta = REG_METADATA.get(number)
+        if reg_meta is None:
             continue
-
         chunks.append({
             "chunk_id": f"reg_{number}",
             "chunk_type": "regulation",
             "regulation_number": number,
-            "title": meta["title"],
-            "reporting_deadline": meta["deadline"],
-            "reporting_route": meta["route"],
+            "title": reg_meta["title"],
+            "reporting_deadline": reg_meta["deadline"],
+            "reporting_route": reg_meta["route"],
             "text": reg["text"],
         })
 
