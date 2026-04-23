@@ -38,7 +38,8 @@ def extract_regulations(pdf_path: str, start_page: int, end_page: int) -> list[d
                     "title": current_title,
                     "text": " ".join(current_lines).strip(),
                 })
-            current_number = re.match(r"^(\d{1,2})\.", line).group(1)
+            number_match = re.match(r"^(\d{1,2})\.", line)
+            current_number = number_match.group(1) if number_match else None
             current_title = prev_line if prev_line else ""
             current_lines = [line]
         else:

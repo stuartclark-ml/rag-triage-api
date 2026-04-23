@@ -76,7 +76,7 @@ def ingest(records: list[dict], chroma_path: Path) -> None:
         ).tolist()
 
         ids = [f"osha_{batch_start + i}" for i in range(len(batch_narratives))]
-        metadatas = [{"severity_bin": s} for s in batch_severities]
+        metadatas: list[dict[str, str]] = [{"severity_bin": s} for s in batch_severities]
 
         collection.add(
             ids=ids,

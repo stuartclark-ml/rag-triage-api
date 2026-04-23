@@ -1,3 +1,94 @@
+## Session 8 — 2026-04-23
+
+### What was built
+- `rag/ingest_osha.py` — full OSHA H&C ingestion pipeline
+  - `clean_narrative(text)` — strips organisation size prefix and `[SEP]`
+    tokens from raw BERT training narratives
+  - `load_and_clean(csv_path)` — reads all 181,374 records from CSV,
+    cleans each narrative, returns flat list of dicts with `severity_bin`
+    and `narrative` fields
+  - `compute_distribution(records)` — counts records per severity class
+    from full dataset, calculates percentages, returns distribution dict
+  - `ingest(records, chroma_path)` — embeds all records using
+    `all-MiniLM-L6-v2` in batches of 256, stores in ChromaDB with
+    `severity_bin` as metadata
+  - `main()` — orchestrates load, distribute, ingest in correct order
+- `data/osha_severity_distribution.json` — precomputed severity
+  distribution across all 181,374 records. Used by Tool 5 for
+  population-level statistics. Computed before sampling to ensure
+  accuracy against full dataset.
+
+### Key decisions made this session
+- Full corpus ingestion (181,374 records) chosen over stratified sample
+  (5,000). Timing test confirmed 5.1 minutes build time — acceptable
+  one-time cost. Full corpus improves query-specific severity
+  distributions, which are more meaningful than population-level
+  figures for Tool 5 output.
+- Stratified sampling approach was designed and then deliberately
+  discarded when Stuart correctly identified that query-specific
+  distributions derived from similar incidents require the full corpus
+  to be statistically reliable.
+- `data/*` used in `.gitignore` instead of `data/` to allow `!`
+  exception rules to take effect for `osha_severity_distribution.json`.
+  Directory-level ignore blocks Git from entering the directory,
+  preventing exceptions from working.
+- Distribution JSON committed to version control as a computed output
+  file. Raw CSV remains gitignored.
+
+### Dataset characteristics
+- Total records: 181,374 (181,375 lines including header)
+- Class 0 (None, 0 days): 97,863 — 53.96%
+- Class 1 (Minor, 1-2 days): 8,939 — 4.93%
+- Class 2 (Moderate, 3-7 days): 17,483 — 9.64%
+- Class 3 (Severe, 8-28 days): 23,427 — 12.92%
+- Class 4 (Major, 29+ days): 33,663 — 18.56%
+
+### Smoke test results
+- Query: "employee slipped on wet floor while assisting resident"
+- Result 1: Class 2, Distance 0.1647 — slip on wet floor in resident room
+- Result 2: Class 4, Distance 0.2202 — slip on wet floor in resident room
+- Result 3: Class 4, Distance 0.2444 — slip on wet floor in bathroom
+- Result 4: Class 2, Distance 0.2478 — slip on wet floor in hallway
+- Result 5: Class 3, Distance 0.2673 — slip on wet floor assisting care
+- All five results correctly identified wet floor slip in care setting.
+  Distance scores improved significantly versus 5,000 record sample test.
+
+### Branch and commit
+- Branch: `feature/osha-ingestion`
+- Commit: `feat(osha): add OSHA H&C ingestion script and severity distribution`
+- 3 files changed: `rag/ingest_osha.py`, `data/osha_severity_distribution.json`,
+  `.gitignore`
+
+### Branch protection configured this session
+- GitHub branch ruleset `protect-main` applied to `main`
+- Rules enabled: restrict deletions, require pull request before merging,
+  block force pushes, require status checks to pass (job: `test`)
+- Bypass list empty — rule applies to all contributors including owner
+- Stale `feature/project-setup` branch deleted locally and remotely
+
+### Open items carried forward
+- `feature/osha-ingestion` branch open — raise PR and merge to main
+  before Session 9 begins
+- All three RAG knowledge bases now complete:
+  - HSG220: 14 chunks in `vectorstore/hsg220/`
+  - RIDDOR: 31 chunks in `vectorstore/riddor/`
+  - OSHA: 181,374 records in `vectorstore/osha/`
+- Vector stores are gitignored — regenerate with:
+  - `python3 -m rag.build_hsg220` then `python3 -m rag.ingest_hsg220`
+  - `python3 -m rag.ingest_riddor`
+  - `python3 -m rag.ingest_osha`
+- Session 9 starting point: raise PR for `feature/osha-ingestion`,
+  merge to main, then begin Tool 2 — `predict_severity` implementation
+
+### Notes
+- NER-based injury mechanism extraction considered and rejected.
+  OSHA data is US proxy for UK settings. Project demonstrates RAG,
+  LangGraph, and FastAPI — mechanism-level taxonomy adds complexity
+  without proportionate portfolio value.
+- Total records figure of 181,375 in distribution JSON includes header
+  row. Minor inaccuracy, does not affect percentages or ingestion.
+  Document honestly in README limitations.
+
 ## Session 7 — 2026-04-22
 
 ### What was built
