@@ -1,3 +1,4 @@
+from curses import meta
 import re
 import fitz
 
@@ -152,7 +153,7 @@ def build_chunks(regulations: list[dict]) -> list[dict]:
                 })
             continue
 
-        meta = REG_METADATA.get(number)
+        meta: dict[str, str | None] | None = REG_METADATA.get(number)
         if meta is None:
             continue
 

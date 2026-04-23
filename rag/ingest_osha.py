@@ -1,6 +1,7 @@
 import csv
 import json
 from pathlib import Path
+from typing import Any
 
 from sentence_transformers import SentenceTransformer
 import chromadb
@@ -76,7 +77,7 @@ def ingest(records: list[dict], chroma_path: Path) -> None:
         ).tolist()
 
         ids = [f"osha_{batch_start + i}" for i in range(len(batch_narratives))]
-        metadatas: list[dict[str, str]] = [{"severity_bin": s} for s in batch_severities]
+        metadatas: list[dict[str, Any]] = [{"severity_bin": s} for s in batch_severities]
 
         collection.add(
             ids=ids,
@@ -103,9 +104,4 @@ def main() -> None:
 
     print(f"\nEmbedding and ingesting {len(records)} records to ChromaDB...")
     CHROMA_PATH.mkdir(parents=True, exist_ok=True)
-    ingest(records, CHROMA_PATH)
-    print("\nOSHA ingestion complete.")
-
-
-if __name__ == "__main__":
-    main()
+    ingest(records, CHROMA_P
