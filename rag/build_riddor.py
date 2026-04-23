@@ -152,17 +152,16 @@ def build_chunks(regulations: list[dict]) -> list[dict]:
                 })
             continue
 
-        meta = REG_METADATA.get(number)
-        if meta is None:
+        reg_meta = REG_METADATA.get(number)
+        if reg_meta is None:
             continue
-
         chunks.append({
             "chunk_id": f"reg_{number}",
             "chunk_type": "regulation",
             "regulation_number": number,
-            "title": meta["title"],
-            "reporting_deadline": meta["deadline"],
-            "reporting_route": meta["route"],
+            "title": reg_meta["title"],
+            "reporting_deadline": reg_meta["deadline"],
+            "reporting_route": reg_meta["route"],
             "text": reg["text"],
         })
 

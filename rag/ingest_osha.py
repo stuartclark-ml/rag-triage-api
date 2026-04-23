@@ -76,15 +76,14 @@ def ingest(records: list[dict], chroma_path: Path) -> None:
         ).tolist()
 
         ids = [f"osha_{batch_start + i}" for i in range(len(batch_narratives))]
-        metadatas = [{"severity_bin": s} for s in batch_severities]  # type: ignore[arg-type]
+        metadatas = [{"severity_bin": s} for s in batch_severities]
 
         collection.add(
             ids=ids,
             embeddings=embeddings,
             documents=batch_narratives,
-            metadatas=metadatas,
+            metadatas=metadatas,  # type: ignore[arg-type]
         )
-        print(f"Ingested {batch_end} / {total}")
 
 
 def main() -> None:
