@@ -1,3 +1,58 @@
+### Session 9 — 2026-04-24
+**Branch at session end:** `feature/tool-predict-severity`
+
+**Completed this session:**
+
+Act 1 — Housekeeping
+- Confirmed architecture before writing any code
+- Confirmed four-tool linear pipeline
+- Confirmed LangGraph removed — replaced by session-based FastAPI endpoints
+- Confirmed Streamlit removed — replaced by static HTML frontend calling FastAPI directly
+- Confirmed HITL enforced structurally between every endpoint via confirmation POST
+- Confirmed RAG evaluation deferred until all four tools are built and pipeline is end-to-end functional
+- Confirmed SHAP deferred until all four tools are built — to be added as separate POST /explain endpoint
+
+Act 2 — predict_severity
+- Built app/tools/predict_severity.py
+- detect_needlestick — keyword set, strips punctuation before matching
+- detect_ambiguous_severity — flags classes 2, 3, 4 based on dissertation finding of poor learned correlation
+- predict_severity — loads stuSterfc/ohs-severity-classifier locally via transformers pipeline
+- Confirmed HuggingFace Inference API not available for this model — switched to local inference
+- Model weights cached at ~/.cache/huggingface/ after first download
+- Smoke test passed — wet floor slip narrative returned Severe (8-28 days), confidence 0.2885, ambiguous_severity_flag True
+- Committed: feat(tools): add predict_severity with needlestick and ambiguous severity detection
+
+Act 3 — map_riddor
+- Built app/tools/map_riddor.py
+- extract_facts — Gemini call, returns four structured fields as JSON
+- retrieve_riddor_sections — embeds confirmed facts, queries RIDDOR ChromaDB collection, returns top 5 chunks
+- generate_advisory — Gemini call with retrieved chunks and confirmed facts, returns conditional advisory
+- map_riddor — orchestrates retrieve and generate, appends hardcoded disclaimer
+- Confirmed predicted_incapacitation from confirmed severity passed into facts dict at endpoint level, not inside tool
+- Confirmed extract_facts is called by /extract-facts endpoint, map_riddor is called by /map-riddor endpoint — two separate endpoints with HITL confirmation between them
+- Import check passed
+- Committed: feat(tools): add map_riddor with fact extraction, RAG retrieval and conditional RIDDOR advisory
+
+**Architectural decisions confirmed this session:**
+- google.generativeai deprecated — switched to google.genai 1.72.0
+- Local model inference via transformers pipeline — HuggingFace Inference API not available for this model
+- Model weights baked into Docker image at build time — no runtime download in deployed container
+- Railway hosts HTML frontend only — FastAPI backend with model runs on AWS ECS Fargate
+- SHAP added as POST /explain endpoint after all four tools complete — local inference removes original barrier
+- RAG evaluation uses industry-standard methodology — designed after pipeline is end-to-end functional
+- User override available at every HITL confirmation step
+
+**Next session starts at:**
+- Build app/tools/analyse_causes.py
+- Raise PR for feature/tool-predict-severity before starting
+
+**Open items carried forward:**
+- SHAP — POST /explain endpoint after all four tools complete
+- RAG evaluation — after pipeline is end-to-end functional
+- HF_TOKEN environment variable to be set in Dockerfile to suppress unauthenticated warning
+- embeddings.position_ids UNEXPECTED warning from sentence-transformers — confirmed harmless, can be ignored
+- README to document all architectural decisions including LangGraph removal rationale and SHAP deferral
+
 ## Session 8 — 2026-04-23
 
 ### What was built
