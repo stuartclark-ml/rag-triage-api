@@ -1,8 +1,6 @@
 from typing import Any
 from transformers import pipeline
 
-from transformers import pipeline
-
 NEEDLESTICK_KEYWORDS = {
     "needle",
     "needlestick",
