@@ -1,3 +1,6 @@
+from curses import raw
+from typing import Any
+
 from transformers import pipeline
 
 NEEDLESTICK_KEYWORDS = {
@@ -35,8 +38,8 @@ def detect_ambiguous_severity(predicted_class: int) -> bool:
 def predict_severity(narrative: str) -> dict:
     needlestick_flag = detect_needlestick(narrative)
 
-    raw = _classifier(narrative)
-    scores = raw[0]
+    raw: list[list[dict[str, Any]]] = _classifier(narrative)  # type: ignore[assignment]
+    scores: list[dict[str, Any]] = raw[0]
 
     probabilities = {
         CLASS_LABELS[item["label"]]: round(item["score"], 4)

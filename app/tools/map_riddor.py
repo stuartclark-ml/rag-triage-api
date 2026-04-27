@@ -40,7 +40,7 @@ Return only valid JSON."""
         contents=prompt,
     )
 
-    raw = response.text.strip()
+    raw = (response.text or "").strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
@@ -66,12 +66,12 @@ def retrieve_riddor_sections(facts: dict) -> list:
         include=["documents", "metadatas", "distances"],
     )
 
+    docs = results["documents"] or []
+    metas = results["metadatas"] or []
+    dists = results["distances"] or []
+
     chunks = []
-    for doc, meta, dist in zip(
-        results["documents"][0],
-        results["metadatas"][0],
-        results["distances"][0],
-    ):
+    for doc, meta, dist in zip(docs[0], metas[0], dists[0]):
         chunks.append({
             "text": doc,
             "metadata": meta,
@@ -120,7 +120,7 @@ Return only valid JSON."""
         contents=prompt,
     )
 
-    raw = response.text.strip()
+    raw = (response.text or "").strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
