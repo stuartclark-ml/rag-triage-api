@@ -1,6 +1,9 @@
 from typing import Any
 from transformers import pipeline
 
+from app.models import SeverityClass
+
+
 NEEDLESTICK_KEYWORDS = {
     "needle",
     "needlestick",
@@ -49,10 +52,10 @@ def predict_severity(narrative: str) -> dict:
     predicted_class = list(CLASS_LABELS.keys()).index(top["label"])
 
     return {
-        "predicted_class": predicted_class,
-        "predicted_label": predicted_label,
-        "confidence": round(top["score"], 4),
-        "probabilities": probabilities,
-        "needlestick_flag": needlestick_flag,
-        "ambiguous_severity_flag": detect_ambiguous_severity(predicted_class),
-    }
+    "predicted_class": SeverityClass(predicted_class),
+    "predicted_label": predicted_label,
+    "confidence": round(top["score"], 4),
+    "probabilities": probabilities,
+    "needlestick_flag": needlestick_flag,
+    "middle_severity_flag": detect_ambiguous_severity(predicted_class),
+}

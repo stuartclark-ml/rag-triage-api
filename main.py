@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from app.config import get_settings
-from app.models import IncidentRequest, TriageResponse
+from app.models import IncidentRequest, TriageResponse, SeverityPrediction, ConfirmedFactsRequest, RiddorAdvisory
+from app.tools.predict_severity import predict_severity
+from app.tools.map_riddor import extract_facts, map_riddor
+
 
 settings = get_settings()
 
@@ -26,9 +29,27 @@ async def health_check():
     }
 
 
+@app.post("/extract-facts")
+async def run_extract_facts(request: IncidentRequest):
+    facts = extract_facts(request.narrative)
+    return facts
+
+@app.post("/predict-severity", response_model=SeverityPrediction)
+async def run_predict_severity(request: IncidentRequest):
+    result = predict_severity(request.narrative)
+    return SeverityPrediction(**result)
+
+@app.post("/map-riddor", response_model=RiddorAdvisory)
+async def run_map_riddor(request: ConfirmedFactsRequest):
+    facts = request.model_dump()
+    result = map_riddor(facts)
+    return RiddorAdvisory(**result)
+
+
 @app.post("/triage", response_model=TriageResponse)
 async def triage(request: IncidentRequest):
     raise HTTPException(
         status_code=501,
         detail="Pipeline not yet implemented. Models and API structure verified."
     )
+    

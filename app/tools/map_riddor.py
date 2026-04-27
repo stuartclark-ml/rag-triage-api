@@ -101,11 +101,13 @@ The predicted incapacitation period is derived from a machine learning model and
 Return a JSON object only — no prose, no markdown, no explanation.
 
 Fields:
-- potentially_applicable_categories: list of RIDDOR categories that may apply based on available information
-- information_still_needed: for each category, what additional information is required to confirm or rule it out
+- potentially_applicable: list of objects, each with:
+  - category: RIDDOR category name
+  - description: what this category covers and why it may apply
+  - information_needed: list of strings — what is still required to confirm or rule out this category
+  - reporting_deadline: statutory deadline if this category applies
 - follow_up_questions: list of specific questions the reporter should pursue
-- reporting_deadlines: for each potentially applicable category, the statutory reporting deadline
-- advisory_notes: any important caveats or context the reporter should be aware of
+- disclaimer: always return exactly "This output is advisory only. A competent person must make the final RIDDOR determination when full information is available."
 
 Extracted facts:
 {json.dumps(facts, indent=2)}
@@ -133,7 +135,7 @@ def map_riddor(facts: dict) -> dict:
     advisory = generate_advisory(facts, chunks)
 
     return {
-        "advisory": advisory,
-        "retrieved_sections": chunks,
+        "potentially_applicable": advisory.get("potentially_applicable", []),
+        "follow_up_questions": advisory.get("follow_up_questions", []),
         "disclaimer": DISCLAIMER,
     }
