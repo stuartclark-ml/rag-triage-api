@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from app.config import get_settings
 from app.models import IncidentRequest, TriageResponse, SeverityPrediction, ConfirmedFactsRequest, RiddorAdvisory, CausalAnalysis
 from app.tools.predict_severity import predict_severity
-from app.tools.analyse_causes import analyse_causes, extract_causes
+from app.tools.analyse_causes import analyse_causes
 from app.tools.map_riddor import extract_facts, map_riddor
 
 
