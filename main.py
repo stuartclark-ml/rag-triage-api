@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from app.config import get_settings
-from app.models import IncidentRequest, TriageResponse, SeverityPrediction, ConfirmedFactsRequest, RiddorAdvisory
+from app.models import IncidentRequest, TriageResponse, SeverityPrediction, ConfirmedFactsRequest, RiddorAdvisory, CausalAnalysis
 from app.tools.predict_severity import predict_severity
+from app.tools.analyse_causes import analyse_causes, extract_causes
 from app.tools.map_riddor import extract_facts, map_riddor
 
 
@@ -45,6 +46,10 @@ async def run_map_riddor(request: ConfirmedFactsRequest):
     result = map_riddor(facts)
     return RiddorAdvisory(**result)
 
+@app.post("/analyse-causes", response_model=CausalAnalysis)
+async def run_analyse_causes(request: IncidentRequest):
+    result = analyse_causes(request.narrative)
+    return CausalAnalysis(**result)
 
 @app.post("/triage", response_model=TriageResponse)
 async def triage(request: IncidentRequest):
