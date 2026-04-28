@@ -28,7 +28,7 @@ def search_similar_incidents(narrative: str) -> tuple[list[dict], list[dict]]:
     for doc, meta, dist in zip(docs[0], metas[0], dists[0]):
         all_incidents.append({
             "narrative_excerpt": doc,
-            "severity_outcome": SeverityClass(int(meta["severity_bin"])),
+            "severity_outcome": SeverityClass(int(str(meta["severity_bin"]))),
             "distance": round(dist, 4),
         })
 
