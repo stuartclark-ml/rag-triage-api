@@ -1,7 +1,6 @@
 from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
 class SeverityClass(Enum):
     NONE = 0
     MINOR = 1
@@ -30,7 +29,18 @@ class IncidentRequest(BaseModel):
                 "Set confirmed_hc_domain to True to confirm the incident is from this domain."
             )
         return v
-    
+
+class ConfirmedFactsRequest(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    injury_type: str
+    persons_involved: str
+    circumstances: str
+    known_severity: str
+    predicted_incapacitation: str = Field(
+        default="unknown",
+        description="Predicted incapacitation label from severity tool, confirmed by user."
+    )
     
 class SeverityPrediction(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -47,6 +57,10 @@ class SeverityPrediction(BaseModel):
     needlestick_flag: bool = Field(
         default=False,
         description="True if needle-related terms detected. Mandatory human review required."
+    )
+    
+    predicted_label: str = Field(
+    description="Human-readable severity label including indicative absence duration."
     )
     
     middle_severity_flag: bool = Field(
