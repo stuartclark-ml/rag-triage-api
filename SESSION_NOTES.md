@@ -1,3 +1,70 @@
+### Session 10 — 2026-04-28
+**Branch at session end:** `feature/tool-find-patterns` — merged to main
+
+**Completed this session:**
+
+Act 1 — CI fixes
+- Fixed mypy errors in predict_severity.py: stray curses import removed, 
+  duplicate pipeline import removed, Any annotation added for transformers 
+  pipeline output
+- Fixed mypy errors in map_riddor.py: response.text or "" guard added in 
+  two places, ChromaDB Optional fields guarded with or []
+- All 12 mypy errors resolved, CI green
+
+Act 2 — Endpoint wiring
+- main.py updated with /predict-severity, /extract-facts, /map-riddor, 
+  /analyse-causes, /find-patterns endpoints
+- ConfirmedFactsRequest added to models.py for /map-riddor request body
+- predicted_label added to SeverityPrediction — human-readable label with 
+  absence duration retained in API response
+- All endpoints verified working end-to-end with test narrative
+
+Act 3 — analyse_causes
+- Built app/tools/analyse_causes.py
+- 4Ps causal framework (Plant, Premises, Practices, People) — UK-aligned, 
+  HSE-recognised
+- Option B — only return categories where a contributing factor was identified
+- extract_causes — Gemini call, returns list of cause dicts
+- retrieve_hsg220_for_cause — one embedding per cause, top 3 HSG220 chunks
+- extract_mitigations — single batched Gemini call across all causes and 
+  chunks, returns concise action lists per cause
+- section_refs includes chapter name and page range for citation
+- Smoke test passed — Premises and Practices identified for wet floor slip
+
+Act 4 — find_patterns
+- Built app/tools/find_patterns.py
+- OSHA collection name confirmed as osha_hc_incidents (not osha_hc)
+- Retrieves 50 similar incidents, returns top 10 narratives to API
+- Query-specific severity distribution computed from all 50 retrieved incidents
+- Population-level distribution dropped — query-specific is more meaningful
+- Smoke test: 42% Class 4 for wet floor slip — significantly above population 
+  baseline of 18.56%
+- Honest tension documented: BERT predicts Moderate (confidence 0.29, 
+  middle_severity_flag True), OSHA distribution shows 42% Major outcomes 
+  for similar incidents — system working as designed, surfaces ambiguity 
+  for human review
+
+**Architectural decisions confirmed this session:**
+- One branch per tool going forward — corrected from Session 10 onwards
+- Query-specific distribution from 50 retrieved incidents preferred over 
+  population-level figures for Tool 5 output
+- extract_mitigations batched into single Gemini call to avoid per-cause 
+  latency
+
+**Next session starts at:**
+- All four tools complete and verified
+- Build the static HTML frontend — Phase 1 single screen output
+- Raise PR for feature/tool-find-patterns before starting
+
+**Open items carried forward:**
+- SHAP — POST /explain endpoint still deferred
+- RAG evaluation — after frontend complete
+- HF_TOKEN environment variable still to be set
+- README not yet updated with architectural decisions
+- Token cost of verbose RIDDOR output to be monitored
+- Chapter 1 HSG220 retrieval for broad queries — known limitation, 
+  document in README
+
 ### Session 9 — 2026-04-24
 **Branch at session end:** `feature/tool-predict-severity`
 
