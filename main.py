@@ -59,8 +59,23 @@ async def run_find_patterns(request: IncidentRequest):
 
 @app.post("/triage", response_model=TriageResponse)
 async def triage(request: IncidentRequest):
-    raise HTTPException(
-        status_code=501,
-        detail="Pipeline not yet implemented. Models and API structure verified."
+    severity_result = predict_severity(request.narrative)
+    severity_prediction = SeverityPrediction(**severity_result)
+
+    facts = extract_facts(request.narrative)
+    facts["predicted_incapacitation"] = severity_prediction.predicted_label
+    riddor_result = map_riddor(facts)
+    riddor_advisory = RiddorAdvisory(**riddor_result)
+
+    causes_result = analyse_causes(request.narrative)
+    causal_analysis = CausalAnalysis(**causes_result)
+
+    patterns_result = find_patterns(request.narrative)
+    pattern_analysis = PatternAnalysis(**patterns_result)
+
+    return TriageResponse(
+        severity_prediction=severity_prediction,
+        riddor_advisory=riddor_advisory,
+        causal_analysis=causal_analysis,
+        pattern_analysis=pattern_analysis,
     )
-    
