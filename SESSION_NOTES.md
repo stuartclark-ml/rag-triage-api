@@ -1,3 +1,64 @@
+<<<<<<< HEAD
+=======
+### Session 11 — 2026-04-28
+**Branch at session end:** `main` — all work merged
+
+**Completed this session:**
+
+Act 1 — Frontend design review
+- Reviewed Claude design project output (7-screen stepper UI)
+- Decision: Phase 2 stepper design kept as-is for future wiring
+- Decision: Build Phase 1 single-page view first — all tool outputs on one 
+  scrollable page, no confirmation gates, static demo data only
+- Decision: Streamlit removed entirely — replaced by static HTML frontend 
+  served via FastAPI StaticFiles at deployment time
+
+Act 2 — Frontend corrections
+- Claude design single-page output reviewed against actual API models
+- Corrected severity taxonomy: S1–S5 replaced with C0–C4 throughout
+  (None/Minor/Moderate/Severe/Major with lost-time bands)
+- Corrected pipeline to four tools — domain validation is input form only,
+  not a tool output section
+- Restored correct field names: CausalFactor, information_needed, 
+  reporting_deadline with two-stage deadline strings
+- Removed invented rationale card from T1 — SeverityPrediction has no 
+  rationale field, model returns probabilities only
+- Fixed analyst name to S. Clark
+- Fixed model label to stuSterfc/ohs-severity-classifier (DistilBERT)
+- Added integration point comment in data.js flagging probabilities key 
+  divergence from live API CLASS_LABELS
+
+Act 3 — Repo housekeeping
+- frontend/ directory created under repo root
+- Five files placed: index.html, app.jsx, data.js, styles.css, 
+  tweaks-panel.jsx
+- streamlit_app/__init__.py deleted
+- Accidental edits to main.py and map_riddor.py identified and reverted 
+  via git restore before committing
+- Committed on feature/frontend-phase1, PR raised, CI green, merged to main
+- Cherry-pick used to recover frontend commit after it was made on 
+  feature/tool-find-patterns post-merge
+
+**Architectural decisions made this session:**
+- Streamlit removed — static HTML frontend is the UI layer
+- Frontend served via FastAPI StaticFiles in production (not yet wired —
+  deferred until AWS deployment)
+- Phase 1 is display-only static demo — no API calls from frontend yet
+- Phase 2 stepper wiring deferred until after /triage endpoint is complete
+
+**Open items for Session 12:**
+- Wire /triage endpoint — sequential pipeline calling all four tools
+- Reconcile probabilities key format between data.js (C0–C4) and live 
+  API CLASS_LABELS (full label strings)
+- Update README — remove Streamlit references, document frontend architecture
+- SESSION_NOTES.md commit at session start
+
+**Known integration points flagged:**
+- data.js probabilities keyed as "C0"–"C4"; live API uses full label strings 
+  e.g. "None (0 days)" — reconcile when wiring real endpoint
+- T2, T3, T4 demo data is approximate — will self-correct through integration
+
+>>>>>>> 00688487 (docs: add Session 11 notes)
 ### Session 10 — 2026-04-28
 **Branch at session end:** `feature/tool-find-patterns` — merged to main
 
