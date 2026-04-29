@@ -34,7 +34,7 @@ class ConfirmedFactsRequest(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     injury_type: str
-    persons_involved: str
+    persons_involved: str | list[str]
     circumstances: str
     known_severity: str
     predicted_incapacitation: str = Field(
