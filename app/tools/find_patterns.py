@@ -61,5 +61,5 @@ def find_patterns(narrative: str) -> dict:
     return {
         "similar_incidents": top_10,
         "severity_distribution": severity_distribution,
-        "injury_mechanism": "Derived from similar incident retrieval across H&C OSHA dataset.",
+        "injury_mechanism": "Not extractable from current dataset — OSHA H&C records contain narrative text and severity labels only. Activity patterns are visible in the similar incidents above.",
     }
