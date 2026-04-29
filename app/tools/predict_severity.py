@@ -33,7 +33,7 @@ def detect_needlestick(narrative: str) -> bool:
 
 
 def detect_ambiguous_severity(predicted_class: int) -> bool:
-    return predicted_class in [2, 3, 4]
+    return predicted_class in [1, 2, 3]
 
 
 def predict_severity(narrative: str) -> dict:
