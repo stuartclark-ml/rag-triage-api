@@ -51,7 +51,7 @@ Return only valid JSON."""
 def retrieve_riddor_sections(facts: dict) -> list:
     embedding_string = (
         f"Injury: {facts.get('injury_type', '')}. "
-        f"Persons involved: {facts.get('persons_involved', '')}. "
+        f"Persons involved: {', '.join(facts['persons_involved']) if isinstance(facts.get('persons_involved'), list) else facts.get('persons_involved', '')}. "
         f"Circumstances: {facts.get('circumstances', '')}. "
         f"Known severity: {facts.get('known_severity', '')}."
         f"Predicted incapacitation: {facts.get('predicted_incapacitation', 'unknown')}."
