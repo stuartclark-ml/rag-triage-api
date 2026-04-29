@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from app.config import get_settings
 from app.models import IncidentRequest, TriageResponse, SeverityPrediction, PatternAnalysis, ConfirmedFactsRequest, RiddorAdvisory, CausalAnalysis
 from app.tools.predict_severity import predict_severity
