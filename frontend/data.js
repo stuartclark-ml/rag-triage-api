@@ -1,193 +1,169 @@
-/* Demo data — static, no API calls. Mirrors FastAPI output models. */
-
-window.RAG_DATA = {
+/* Demo data — static, no API calls. Mirrors FastAPI /triage response model. */
+const D = {
   meta: {
     incidentRef: "INC-2026-0428-117",
     analyst: "S. Clark",
-    analystRole: "OHS Consultant · rag-triage-api demo",
+    analystRole: "OHS Consultant · ML Engineering Portfolio",
     submittedAt: "2026-04-28T09:42:11Z",
     pipelineVersion: "rag-triage-api v0.1.0",
     modelStack: "stuSterfc/ohs-severity-classifier · map_riddor · analyse_causes · find_patterns",
   },
-
-  narrative:
-    "On the morning of 26 April 2026 at approximately 07:50, a service user (SU-431, 78yo, mod. dementia, mobility-impaired) was being assisted from bed to a wheeled commode by a single care worker (CW-12) on the second floor of Beechfield Residential. The mobile hoist normally used had been removed for sling inspection the previous evening and was not yet returned; this was not flagged at the morning handover. The care worker performed an unaided pivot transfer. The service user's left foot caught on the bedframe, both fell to the carpeted floor. The service user sustained a suspected fractured left hip and was conveyed by ambulance to North Tyneside General. The care worker reported lower-back strain but did not require hospitalisation. The room had recently been re-arranged for a deep clean; bed brakes were engaged. CCTV in the corridor confirms the timeline. SU-431's care plan flags 'two-person transfer with hoist'. The shift leader was alerted at 07:58 and the duty manager at 08:05.",
-
-  /* ---- Severity taxonomy (C0–C4) ---- */
+  narrative: "On the morning of 26 April 2026 at approximately 07:50, a service user (SU-431, 78yo, mod. dementia, mobility-impaired) was being assisted from bed to a wheeled commode by a single care worker (CW-12) on the second floor of Beechfield Residential. The mobile hoist normally used had been removed for sling inspection the previous evening and was not yet returned; this was not flagged at the morning handover. The care worker performed an unaided pivot transfer. The service user's left foot caught on the bedframe, both fell to the carpeted floor. The service user sustained a suspected fractured left hip and was conveyed by ambulance to North Tyneside General. The care worker reported lower-back strain but did not require hospitalisation. The room had recently been re-arranged for a deep clean; bed brakes were engaged. CCTV in the corridor confirms the timeline. SU-431's care plan flags 'two-person transfer with hoist'. The shift leader was alerted at 07:58 and the duty manager at 08:05.",
   severityClasses: [
-    { id: 0, label: "C0", name: "None",     band: "0 days" },
-    { id: 1, label: "C1", name: "Minor",    band: "1–2 days" },
-    { id: 2, label: "C2", name: "Moderate", band: "3–7 days" },
-    { id: 3, label: "C3", name: "Severe",   band: "8–28 days" },
-    { id: 4, label: "C4", name: "Major",    band: "29+ days" },
+    { id: 0, name: "None",     band: "0 days" },
+    { id: 1, name: "Minor",    band: "1–2 days" },
+    { id: 2, name: "Moderate", band: "3–7 days" },
+    { id: 3, name: "Severe",   band: "8–28 days" },
+    { id: 4, name: "Major",    band: "29+ days" },
   ],
-
-  /* ---- T1: predict_severity ---- */
-  // NOTE — integration point: live API keys probabilities by label string
-  // e.g. "None (0 days)", "Minor (1-2 days)" from CLASS_LABELS in predict_severity.py.
-  // Demo uses short C0-C4 keys for readability. Reconcile when wiring real endpoint.
-  t1_predict_severity: {
+  severity_prediction: {
     probabilities: {
-      "C0": 0.01,
-      "C1": 0.04,
-      "C2": 0.12,
-      "C3": 0.78,
-      "C4": 0.05,
+      "Major (29+ days)":    0.3924,
+      "Severe (8-28 days)":  0.2993,
+      "Moderate (3-7 days)": 0.1763,
+      "Minor (1-2 days)":    0.0679,
+      "None (0 days)":       0.0641,
     },
-    predicted_class: 3,
-    confidence: 0.78,
+    predicted_class: 4,
+    confidence: 0.3924,
     needlestick_flag: false,
-    middle_severity_flag: true, // predicted is 2/3/4 -> high-uncertainty boundary
+    predicted_label: "Major (29+ days)",
+    middle_severity_flag: false,
   },
-
-  /* ---- T2: map_riddor ---- */
-  t2_map_riddor: {
-    headline: "Likely reportable — pending fracture confirmation",
-    overall_status: "conditional", // reportable | conditional | not-required
-    statute: "RIDDOR 2013, Schedule 1",
-    categories: [
+  riddor_advisory: {
+    potentially_applicable: [
       {
-        category: "Specified injury — fracture (other than fingers, thumbs, toes)",
-        description:
-          "A radiographically confirmed fracture of the femoral neck in a non-worker (service user) injured by a work-related activity (manual transfer) is a specified injury and reportable under Schedule 1.",
+        category: "Over-7-day incapacitation (Regulation 4)",
+        description: "An injury to a person at work causing incapacitation from routine work for more than seven consecutive days. The predicted incapacitation of Major (29+ days) suggests this threshold may be met — confirmation from a medical practitioner is required before any determination.",
         information_needed: [
-          "Radiograph result for SU-431 confirming fracture vs. contusion.",
-          "Confirmation that the fall occurred in connection with work (manual handling task).",
-          "Confirmation that the service user was admitted directly from the scene.",
+          "Confirmation from a medical practitioner that the care assistant is incapacitated for more than seven consecutive days (excluding the day of the accident).",
         ],
-        reporting_deadline: "Notify HSE without delay (online F2508), then submit written report within 10 days of accident.",
+        reporting_deadline: "Within 15 days of the accident.",
       },
       {
-        category: "Over-7-day incapacitation (worker)",
-        description:
-          "If care worker CW-12 (lower-back strain) is unable to perform normal duties for more than 7 consecutive days (excluding day of accident) the incident is separately reportable.",
+        category: "Specified injuries to workers (Regulation 5)",
+        description: "Certain serious injuries to a person at work require immediate reporting. Lower back pain is not itself a specified injury, but may be symptomatic of one such as a vertebral fracture. No determination is possible without further medical information.",
         information_needed: [
-          "Return-to-duty date for CW-12 from occupational health.",
-          "Whether modified-duties cover counts under the trust's interpretation of 'normal work'.",
+          "Confirmation from a registered medical practitioner whether the injury involves a bone fracture.",
+          "Information regarding whether the care assistant suffered loss of consciousness or any other specified injury listed under Regulation 5.",
         ],
-        reporting_deadline: "Submit written report within 15 days of accident if threshold met.",
+        reporting_deadline: "Immediately (reportable without delay), if confirmed.",
       },
       {
-        category: "Dangerous occurrence — lifting equipment",
-        description:
-          "Failure or removal-from-service of a passenger or load-bearing lift can be a dangerous occurrence under Schedule 2. The hoist was withdrawn for sling inspection; verify whether this was a defect-driven withdrawal.",
+        category: "Non-fatal injuries to non-workers (Regulation 5)",
+        description: "An injury to a person not at work resulting from a work-related accident may be reportable if that person is taken to hospital for treatment. The resident became unsteady during the transfer — whether a reportable injury occurred requires confirmation.",
         information_needed: [
-          "Reason hoist was withdrawn — routine LOLER inspection vs. fault report.",
-          "LOLER inspection record and last thorough examination date.",
-          "Whether any other floor was affected by the same withdrawal.",
+          "Confirmation of whether the resident was injured as a result of the incident.",
+          "If injured, confirmation of whether the resident was taken from the site to a hospital for treatment.",
         ],
-        reporting_deadline: "If a dangerous occurrence is confirmed, notify without delay; written report within 10 days.",
+        reporting_deadline: "Immediately (reportable without delay), if confirmed.",
+      },
+      {
+        category: "Record-keeping obligation — 3-day incapacitation (Regulation 12(1)(c))",
+        description: "A record must be kept of any work-related injury incapacitating a person at work for more than three consecutive days. Given the predicted incapacitation period, this obligation is likely triggered. This is a record-keeping obligation only — not a report to HSE.",
+        information_needed: [],
+        reporting_deadline: "Not a reporting deadline — record must be kept for at least three years.",
       },
     ],
     follow_up_questions: [
-      "Confirm the radiograph result for SU-431 before submitting any RIDDOR notification.",
-      "Has CW-12's back strain been triaged by occupational health, and is a return date forecast?",
-      "Why was the hoist withdrawn — routine inspection or a defect? Retrieve the LOLER record.",
-      "Has the care plan deviation been logged in the resident's care record within 24 hours?",
-      "Is there a documented escalation pathway for missing safety-critical equipment at handover?",
+      "What is the specific medical diagnosis for the care assistant's lower back pain? Does it involve a bone fracture or any other injury specified under Regulation 5?",
+      "Has a registered medical practitioner confirmed the incapacitation period for the care assistant? If so, what is the confirmed period for routine work (excluding the day of the accident)?",
+      "Was the resident injured during the incident?",
+      "If the resident was injured, were they taken from the site of the accident to a hospital for treatment for that injury?",
+      "Was the incident on hospital premises, and if so, did the resident suffer a 'specified injury' as defined by RIDDOR?",
+      "What was the exact state of the floor in the area where the incident occurred, and had any wet floor signs been put in place?",
+      "Were there any other witnesses to the incident?",
+      "What was the care assistant's routine work, and are they genuinely unable to perform it due to the injury?",
     ],
+    disclaimer: "This is a conditional advisory only. A competent person must make the final RIDDOR determination when full information is available. This output does not constitute a legal determination.",
   },
-
-  /* ---- T3: analyse_causes ---- */
-  t3_analyse_causes: {
-    factors: [
+  causal_analysis: {
+    identified_causes: [
       {
-        cause_type: "Primary activity",
-        description:
-          "Single-handed pivot transfer of a mobility-impaired service user whose care plan specifies a two-person hoist transfer — a deviation from the documented safe system of work.",
-        hsg220_section: "HSG220 §3.4 — Competence & supervision; MHOR 1992 Reg. 4(1)(b)(ii)",
+        cause_type: "Premises",
+        description: "Recently mopped and slightly wet floor creating a slip or instability hazard during the resident transfer.",
+        hsg220_section: "HSG220 Ch.6 (pp.32–34), Ch.3 (pp.17–21), Ch.8 (pp.39–44)",
         mitigation_actions: [
-          "Reinforce the two-person transfer rule via mandatory toolbox talk for all care staff within 7 days.",
-          "Spot-audit transfer logs weekly for 8 weeks; report exceptions to the clinical lead.",
-          "Add a transfer-method confirmation prompt to the electronic care record at the point of task selection.",
+          "Use slip-resistant flooring where surface contamination cannot be controlled.",
+          "Prevent floors from getting contaminated by water and other fluids.",
+          "Design tasks to minimise spillages.",
+          "Control contamination through containing and effectively cleaning spillages.",
+          "Establish procedures for quickly and effectively dealing with spillages.",
+          "Choose effective cleaning methods, avoiding additional slip or trip risks.",
+          "Restrict access to smooth floors left damp by mopping until dry.",
+          "Implement adequate segregation during traditional mopping until the floor is dry.",
+          "Provide staff with suitable, slip-resistant footwear where slip risks exist.",
+          "Foster a 'see it, sort it' attitude for immediate spill clean-up.",
+          "Include environmental slip risk factors in care plans for high-risk residents.",
         ],
       },
       {
-        cause_type: "Equipment availability",
-        description:
-          "The mobile hoist was withdrawn the previous evening for sling inspection and was not returned to the floor before morning transfers commenced. The shortfall was not visible at handover.",
-        hsg220_section: "HSG220 §5.2 — Equipment & maintenance; LOLER 1998 Reg. 9 — thorough examination",
+        cause_type: "Practices",
+        description: "Unsafe or inadequate moving and handling practice during transfer, especially when the resident became unsteady.",
+        hsg220_section: "HSG220 Ch.3 (pp.17–21), Ch.2 (pp.14–16), Ch.11 (pp.52–55)",
         mitigation_actions: [
-          "Replace open-loop sling inspection with a logged check-in / check-out using existing asset tags.",
-          "Add a hoist-status row to the morning handover SBAR template; mandatory tick-box, no override.",
+          "Assess moving and handling risks, ensuring competent staff identify issues.",
+          "Seek specialist advice for residents with specific moving and handling needs.",
+          "Consider staff competence and training for all moving and handling tasks.",
+          "Consider the environment, including flooring, lighting, and space restrictions.",
+          "Consider specific resident needs as part of the care planning process.",
+          "Communicate moving and handling information to staff, keeping it accessible.",
+          "Document resident's ability to support weight and relevant factors in care plans.",
+          "Specify the number of staff required for different types of transfers.",
+          "Train staff to manage changing resident needs, abilities, or agitation during transfers.",
+          "Use moving and handling equipment only after assessment and with care plans.",
+          "Follow manufacturer's instructions for all moving and handling equipment.",
+          "Review person-centred plans periodically and when resident needs change.",
+          "Ensure staff are competent in safe moving and handling techniques.",
+          "Provide sufficient and appropriate moving and handling equipment.",
+          "Never leave vulnerable persons unattended in a hoist or prone to falling.",
+        ],
+      },
+      {
+        cause_type: "People",
+        description: "Care worker's manual handling training or technique may have been insufficient to manage the transfer safely without the hoist.",
+        hsg220_section: "HSG220 Ch.3 (pp.17–21), Ch.2 (pp.14–16), Ch.1 (pp.8–13)",
+        mitigation_actions: [
+          "Ensure a trained, skilled, and competent workforce.",
+          "Provide clear instructions, information, and adequate training for employees.",
+          "Ensure all employees know how to work safely and without health risks.",
+          "Identify training needs to ensure staff competence in moving and handling.",
+          "Include practical instructions, demonstrations, and practice in manual handling training.",
+          "Monitor staff for safe practices, identifying further instruction or supervision needs.",
+          "Review training when tasks, equipment, or responsibilities change.",
+          "Check that staff follow established safety arrangements.",
+        ],
+      },
+      {
+        cause_type: "Equipment",
+        description: "Mobile hoist removed for sling inspection the previous evening and not returned before morning transfers commenced. Shortfall not visible at handover.",
+        hsg220_section: "HSG220 Ch.5 (pp.28–31), LOLER 1998 Reg.9",
+        mitigation_actions: [
+          "Implement a logged check-in / check-out procedure for safety-critical equipment.",
+          "Add equipment status to the morning handover template — mandatory confirmation.",
           "Provision a back-up hoist on each floor so a withdrawn unit never leaves a floor without cover.",
-        ],
-      },
-      {
-        cause_type: "Environmental factor",
-        description:
-          "The bedroom had been re-arranged for a deep clean; the transfer route was not re-assessed, and the service user's left foot caught on the bedframe during the pivot.",
-        hsg220_section: "HSG220 §3.2 — Risk assessment; MHOR 1992 Reg. 4(1)(b)(i)",
-        mitigation_actions: [
-          "Trigger a 5-minute transfer-route re-assessment after any deep clean or layout change; record on the PEEP form.",
-          "Mark the cleared transfer footprint on the floor in each resident's room using removable tape.",
-        ],
-      },
-      {
-        cause_type: "Communication & handover",
-        description:
-          "The withdrawal of the hoist was known to the night shift but not surfaced at the 07:00 handover; the morning care worker began transfers without knowledge of the equipment shortfall.",
-        hsg220_section: "HSG220 §4.2 — Communication & handover",
-        mitigation_actions: [
-          "Mandate a closed-loop equipment-status section in the handover SBAR.",
-          "Define an on-call escalation: any missing hoist or sling for more than 30 minutes escalates to the duty manager automatically.",
-        ],
-      },
-      {
-        cause_type: "Injury mechanism",
-        description:
-          "Low-energy fall from standing during an unaided pivot transfer of an elderly, mobility-impaired service user — the classic mechanism for fragility fractures of the proximal femur.",
-        hsg220_section: "HSG220 §6.1 — Manual handling of people; HSE Manual handling assessment chart (MAC)",
-        mitigation_actions: [
-          "Where the assessed transfer is hoist-only, lock out manual transfer in the electronic care plan UI.",
-          "Refresh staff training on falls in fragility populations — single annual module.",
+          "Ensure LOLER inspection records are current and accessible to staff.",
+          "Define an escalation pathway for missing safety-critical equipment at handover.",
         ],
       },
     ],
+    disclaimer: "These are directions for investigation only. Determination of root cause requires full investigation by a competent person.",
   },
-
-  /* ---- T4: find_patterns ---- */
-  t4_find_patterns: {
-    cohort_size: 1284,
-    injury_mechanism: "Low-energy fall during assisted manual transfer (hoist not used)",
+  pattern_analysis: {
     similar_incidents: [
-      {
-        id: "INC-2024-0883",
-        narrative_excerpt:
-          "Hoist withdrawn from floor overnight; not returned before AM transfers. Single carer attempted pivot; resident fell and sustained hip fracture.",
-        severity_outcome: 3,
-      },
-      {
-        id: "INC-2025-0211",
-        narrative_excerpt:
-          "Care plan flagged two-person transfer; CW transferred resident alone due to staff shortage. Resident fell from edge of bed; hip fracture confirmed on radiograph.",
-        severity_outcome: 4,
-      },
-      {
-        id: "INC-2024-1402",
-        narrative_excerpt:
-          "Sling out for inspection; staff used pivot transfer technique. Resident sustained bruising and superficial graze; no fracture.",
-        severity_outcome: 1,
-      },
-      {
-        id: "INC-2025-0577",
-        narrative_excerpt:
-          "Bedroom re-arranged for cleaning; transfer route obstructed by side table. Near-miss — staff aborted transfer.",
-        severity_outcome: 0,
-      },
-      {
-        id: "INC-2023-0612",
-        narrative_excerpt:
-          "Two-person rule deviation during shift change. Resident slipped from commode; soft-tissue injury, hospital attendance no admission.",
-        severity_outcome: 2,
-      },
+      { narrative_excerpt: "Assisting confused resident who was not cooperative with care. During transfer of resident from wheelchair to toileting felt lower back pain that radiated down her left leg.", severity_outcome: 4 },
+      { narrative_excerpt: "Assisting aide in transferring resident from wheelchair to bed. Resident started to slip off the bed; they then tried to lift resident to the bed when pain in lower back occurred.", severity_outcome: 2 },
+      { narrative_excerpt: "Helping a resident back in their wheelchair. Resident was attempting to put themselves on the ground. Employee heard a pop and sudden pain in lower back. Body mechanics — repositioning.", severity_outcome: 1 },
+      { narrative_excerpt: "Assisting with resident transfer. Felt a sharp pain in low left side of back while pulling resident away from the dining room table in their wheelchair.", severity_outcome: 2 },
+      { narrative_excerpt: "Injured employee was assisting a patient from the wheelchair to the bed. They had to twist to not injure the patient while getting the patient into bed. Lower back pain.", severity_outcome: 0 },
+      { narrative_excerpt: "The employee was assisting transferring the resident from the bed to the wheelchair. Employee felt low back pain while transferring the resident.", severity_outcome: 2 },
+      { narrative_excerpt: "While assisting a resident to the bed from the wheelchair felt a pain in lower back.", severity_outcome: 4 },
+      { narrative_excerpt: "Injured employee was transferring a resident from her bed to her wheelchair when the resident almost fell. After getting the resident into her wheelchair she felt pain in her lower back.", severity_outcome: 0 },
+      { narrative_excerpt: "Employee was assisting the resident to get up from the wheelchair and felt a pain in her lower back.", severity_outcome: 2 },
+      { narrative_excerpt: "Associate was assisting resident with transfer into bed and upon bending to assist resident felt pain in her lower back.", severity_outcome: 3 },
     ],
-    severity_distribution: {
-      "C0": 0.04,
-      "C1": 0.09,
-      "C2": 0.18,
-      "C3": 0.55,
-      "C4": 0.14,
-    },
+    severity_distribution: { "0": 12, "1": 10, "2": 18, "3": 34, "4": 26 },
+    injury_mechanism: "Not extractable from current dataset — OSHA H&C records contain narrative text and severity labels only. Activity patterns are visible in the similar incidents above.",
   },
+  domain_disclaimer: "DOMAIN CONSTRAINT: This system was trained exclusively on OSHA Health and Social Care sector data from care home settings. It has not been validated outside this domain. All outputs are decision-support tools only — not compliance determinations.",
 };
