@@ -1,5 +1,34 @@
-<<<<<<< HEAD
-=======
+## Session 12 — 30 April 2026
+
+### Branch
+feature/triage-endpoint, feature/frontend-phase1-demo
+
+### Completed
+- Recovered unmerged frontend Phase 1 branch and SESSION_NOTES S11 — committed via PR #4 and #5
+- Wired /triage endpoint — sequential pipeline: predict_severity → extract_facts → map_riddor → analyse_causes → find_patterns → TriageResponse
+- Fixed middle_severity_flag range: corrected to classes 1–3 (Minor, Moderate, Severe)
+- Fixed persons_involved: changed type to str | list[str] in ConfirmedFactsRequest
+- Fixed retrieve_riddor_sections: list-safe persons_involved formatting in embedding string
+- Removed unused HTTPException import caught by CI ruff check
+- Documented injury_mechanism as honest data limitation
+- Rebuilt frontend from scratch: single index.html + data.js, ISO 7010 safety colour palette, consent/disclaimer modal, no C# labels visible to user
+- Removed redundant frontend files: app.jsx, styles.css, tweaks-panel.jsx
+
+### Key decisions
+- Frontend stays as HTML/React — not Streamlit. Stuart has HTML/CSS experience and design quality matters for demo
+- All data in data.js separate from index.html — cleaner for Phase 2 API wiring
+- ISO 7010 colour palette: blue mandatory, amber hazard, red danger, green safe — defensible in OHS context
+
+### Known issues
+- Frontend not yet wired to live API — Phase 2 work
+- Input form for narrative not yet built — required before API wiring
+- OSHA severity_distribution keys are "0"–"4" strings — frontend handles correctly
+
+### Session 13 starting point
+- Design and build narrative input form
+- Wire frontend to /triage endpoint replacing static data.js
+- Test full end-to-end flow in browser
+
 ### Session 11 — 2026-04-28
 **Branch at session end:** `main` — all work merged
 
@@ -58,7 +87,6 @@ Act 3 — Repo housekeeping
   e.g. "None (0 days)" — reconcile when wiring real endpoint
 - T2, T3, T4 demo data is approximate — will self-correct through integration
 
->>>>>>> 00688487 (docs: add Session 11 notes)
 ### Session 10 — 2026-04-28
 **Branch at session end:** `feature/tool-find-patterns` — merged to main
 
