@@ -1,3 +1,37 @@
+## Session 13 — 30 April 2026
+
+### Branch
+feature/frontend-wiring
+
+### Completed
+- Added CORSMiddleware to main.py — allows browser fetch from file:// origin
+- Replaced static data.js frontend with live API-wired index.html
+- Built InputForm component — narrative textarea, domain checkbox, character counter, validation
+- Built LoadingView component — spinner, pipeline step cycling, 30–60s wait messaging
+- Built ResultsView component — passes live API response as props to T1–T4
+- Added DEMO_MODE flag for local UI testing without hitting API
+- Added client-side meta generation — incidentRef, submittedAt, analyst
+- Implemented cross-block mitigation deduplication in T3 with fallback message
+- Fixed riddor-deadline CSS — white-space: normal, max-width: 200px
+- Smoke tested end-to-end — narrative in, four tool outputs rendered correctly
+- Smoke tested needlestick narrative — flag triggered correctly, caution wording refined
+
+### Key decisions
+- data.js removed entirely — all data from live API
+- meta fields generated client-side — not in TriageResponse
+- T3 deduplication: cross-block, normalised lowercase comparison, empty block fallback
+- Needlestick caution wording updated to reference 99% training data blind spot explicitly
+
+### Open items for Session 14
+- PDF printout / consolidated actionable plan (options documented)
+- T4 cohort distribution — reframe description, link to T1 prediction (options documented)
+- T3 RAG retrieval quality — cause embedding too broad for some incident types (tool-level fix, future session)
+- Consider reordering T4 before T1 (options documented)
+
+### Known issues
+- Two Plant causes with identical mitigation lists — second block renders fallback message correctly but underlying RAG retrieval needs tightening at tool level
+- Needlestick Practices/People mitigations include moving and handling content — assessed as domain-appropriate given resident movement as contributing factor
+
 ## Session 12 — 30 April 2026
 
 ### Branch
