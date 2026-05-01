@@ -1,3 +1,29 @@
+### Session 14 — 2026-05-01
+**Branch at session end:** main — all work merged
+
+**Completed this session:**
+- Merged feature/frontend-wiring to main — live API wiring, input form, Session 13 notes confirmed landed
+- Fixed typo in index.html — committed via fix/frontend-typo PR
+
+**Next session starts at:**
+- feature/readme-update — remove Streamlit refs, document frontend architecture and honest limitations
+- Then Dockerfile, S3, ECR, ECS Fargate deployment
+
+**Open items carried forward:**
+- README update (Streamlit removal, frontend architecture, honest limitations)
+- PDF printout / consolidated actionable plan
+- T4 cohort distribution reframing
+- Consider reordering T4 before T1
+- SHAP offline notebook in shap_analysis/
+- HF_TOKEN in Dockerfile
+
+**Architectural decisions confirmed this session:**
+- AWS deployment is next priority — single-page frontend is stable enough to deploy
+- HITL stepper deferred until after AWS deployment
+- UI wording polish deferred — lowest return against portfolio goals
+- Vector stores (hsg220, osha, riddor) exist locally — need S3 upload before deployment
+- No Dockerfile exists yet — build from scratch in Session 15
+
 ## Session 13 — 30 April 2026
 
 ### Branch
