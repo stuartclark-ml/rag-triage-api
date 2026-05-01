@@ -9,7 +9,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="data.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 :root {
@@ -353,7 +352,7 @@ body {
 .riddor-deadline {
   flex-shrink: 0; padding: 5px 10px;
   border-radius: var(--r); font-family: var(--font-mono); font-size: 11px;
-  font-weight: 500; white-space: nowrap;
+  font-weight: 500; white-space: normal; max-width: 200px; line-height: 1.45;
 }
 .deadline-immediate { background: var(--red-tint); color: var(--red); border: 1px solid var(--red); }
 .deadline-15day     { background: var(--amber-tint); color: var(--amber-2); border: 1px solid var(--amber); }
@@ -466,16 +465,32 @@ body {
 /* ── ANIMATIONS ── */
 @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 <div id="root"></div>
 
 <script type="text/babel">
-// Data loaded from data.js
-
 const SEV_COLORS = ["var(--green)","var(--green-2)","var(--amber)","var(--amber-2)","var(--red)"];
 const SEV_TINTS  = ["var(--green-tint)","#e8f5e9","var(--amber-tint)","#fbe9e7","var(--red-tint)"];
+
+const SEVERITY_CLASSES = [
+  { id: 0, name: "None",     band: "0 days" },
+  { id: 1, name: "Minor",    band: "1–2 days" },
+  { id: 2, name: "Moderate", band: "3–7 days" },
+  { id: 3, name: "Severe",   band: "8–28 days" },
+  { id: 4, name: "Major",    band: "29+ days" },
+];
+
+const PIPELINE_STEPS = [
+  "Running severity prediction…",
+  "Extracting RIDDOR facts…",
+  "Analysing contributing causes…",
+  "Searching OSHA H&C patterns…",
+];
+
+const API_URL = "http://localhost:8000";
 
 function pct(v) { return (v * 100).toFixed(1) + "%"; }
 function sevColor(id) { return SEV_COLORS[id] || SEV_COLORS[0]; }
@@ -489,7 +504,13 @@ function deadlineClass(dl) {
   return "deadline-record";
 }
 
-/* ── MODAL ── */
+function genRef() {
+  const now = new Date();
+  const d = now.toISOString().slice(0,10).replace(/-/g,"");
+  const n = String(Math.floor(Math.random()*900)+100);
+  return `INC-${d}-${n}`;
+}
+
 function Modal({ onConfirm }) {
   return (
     <div className="modal-overlay">
@@ -519,7 +540,126 @@ function Modal({ onConfirm }) {
   );
 }
 
-/* ── SECTION WRAPPER ── */
+function InputForm({ onSubmit }) {
+  const [narrative, setNarrative] = React.useState("");
+  const [confirmed, setConfirmed] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  const charCount = narrative.trim().length;
+  const ready = charCount >= 50 && confirmed;
+
+  function handleSubmit() {
+    if (charCount < 50) { setError("Narrative must be at least 50 characters."); return; }
+    if (!confirmed) { setError("You must confirm this incident is from a health and social care care home setting."); return; }
+    setError("");
+    onSubmit(narrative);
+  }
+
+  return (
+    <div style={{ maxWidth: 760, margin: "48px auto", padding: "0 24px" }}>
+      <div className="section-header" style={{ marginBottom: 24 }}>
+        <span className="section-code">INPUT</span>
+        <div>
+          <div className="section-title">Incident narrative</div>
+          <div className="section-desc">Health and social care care home settings only. Minimum 50 characters.</div>
+        </div>
+      </div>
+      <div className="card">
+        <textarea
+          value={narrative}
+          onChange={e => setNarrative(e.target.value)}
+          placeholder="Enter the full incident narrative here…"
+          style={{
+            width: "100%", minHeight: 200,
+            font: "14px/1.65 var(--font-sans)",
+            color: "var(--ink)", background: "var(--bg)",
+            border: "1px solid var(--line)", borderRadius: "var(--r)",
+            padding: "14px 16px", resize: "vertical", outline: "none",
+          }}
+        />
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: charCount >= 50 ? "var(--green)" : "var(--ink-4)" }}>
+            {charCount} characters {charCount < 50 ? `(${50 - charCount} more required)` : "✓"}
+          </span>
+        </div>
+        <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--blue-tint)", borderRadius: "var(--r)", border: "1px solid var(--blue)", display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <input
+            type="checkbox"
+            id="domain-confirm"
+            checked={confirmed}
+            onChange={e => setConfirmed(e.target.checked)}
+            style={{ marginTop: 3, accentColor: "var(--blue)", flexShrink: 0 }}
+          />
+          <label htmlFor="domain-confirm" style={{ fontSize: 13, color: "var(--blue)", lineHeight: 1.55, cursor: "pointer" }}>
+            I confirm this incident is from a <strong>health and social care care home setting</strong>. This system has not been validated outside this domain.
+          </label>
+        </div>
+        {error && (
+          <div className="alert alert-warn" style={{ marginTop: 12 }}>
+            <div className="alert-icon">!</div>
+            <div><div className="alert-body">{error}</div></div>
+          </div>
+        )}
+        <button
+          onClick={handleSubmit}
+          disabled={!ready}
+          style={{
+            marginTop: 16, width: "100%",
+            background: ready ? "var(--blue)" : "var(--line)",
+            color: ready ? "white" : "var(--ink-4)",
+            border: "none", borderRadius: "var(--r)",
+            padding: "13px 24px",
+            fontFamily: "var(--font-disp)", fontSize: 14, fontWeight: 700,
+            letterSpacing: "0.03em", cursor: ready ? "pointer" : "not-allowed",
+            transition: "background 0.15s",
+          }}
+        >
+          Run Triage Pipeline →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function LoadingView() {
+  const [stepIdx, setStepIdx] = React.useState(0);
+
+  React.useEffect(() => {
+    const id = setInterval(() => {
+      setStepIdx(i => Math.min(i + 1, PIPELINE_STEPS.length - 1));
+    }, 12000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: 24 }}>
+      <div style={{
+        width: 48, height: 48, borderRadius: "50%",
+        border: "3px solid var(--line)",
+        borderTopColor: "var(--blue)",
+        animation: "spin 0.9s linear infinite",
+      }} />
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontFamily: "var(--font-disp)", fontSize: 18, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>
+          {PIPELINE_STEPS[stepIdx]}
+        </div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-4)" }}>
+          This typically takes 30–60 seconds
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        {PIPELINE_STEPS.map((_, i) => (
+          <div key={i} style={{
+            width: 8, height: 8, borderRadius: "50%",
+            background: i <= stepIdx ? "var(--blue)" : "var(--line)",
+            transition: "background 0.3s",
+          }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Section({ id, code, title, desc, children }) {
   return (
     <div className="section" id={id}>
@@ -535,12 +675,10 @@ function Section({ id, code, title, desc, children }) {
   );
 }
 
-/* ── T1: SEVERITY PREDICTION ── */
-function T1() {
-  const t = D.severity_prediction;
-  const pred = D.severityClasses[t.predicted_class];
-  const probEntries = D.severityClasses.map((sc) => {
-    const key = `${sc.name} (${sc.band})`.replace("0 days","0 days");
+function T1({ data }) {
+  const t = data.severity_prediction;
+  const pred = SEVERITY_CLASSES[t.predicted_class];
+  const probEntries = SEVERITY_CLASSES.map((sc) => {
     const matchKey = Object.keys(t.probabilities).find(k => k.toLowerCase().startsWith(sc.name.toLowerCase())) || "";
     const val = t.probabilities[matchKey] ?? 0;
     return { sc, val };
@@ -549,7 +687,6 @@ function T1() {
   return (
     <Section id="t1" code="T1" title="Severity prediction"
       desc="ML model prediction using stuSterfc/ohs-severity-classifier (DistilBERT). Trained on OSHA H&C sector data. Confidence reflects probability mass on top class.">
-
       <div className="sev-hero">
         <div className="sev-hero-class" style={{ background: sevTint(t.predicted_class), borderRight: `3px solid ${sevColor(t.predicted_class)}` }}>
           <div className="sev-hero-label" style={{ color: sevColor(t.predicted_class) }}>{pred.name}</div>
@@ -560,7 +697,7 @@ function T1() {
             <div className="sev-hero-conf-label">Model confidence</div>
             <div className="sev-hero-conf">{pct(t.confidence)}</div>
           </div>
-          <div className="sev-hero-model">{D.meta.modelStack.split("·")[0].trim()}</div>
+          <div className="sev-hero-model">stuSterfc/ohs-severity-classifier · DistilBERT</div>
         </div>
         <div style={{ padding: "20px 24px", borderLeft: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: "8px", justifyContent: "center", minWidth: 200 }}>
           <div style={{ fontSize: 11, color: "var(--ink-4)", fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Advisory flags</div>
@@ -572,13 +709,16 @@ function T1() {
           </div>
         </div>
       </div>
-
       {t.needlestick_flag && (
         <div className="alert alert-danger">
           <div className="alert-icon">!</div>
           <div>
             <div className="alert-title">Needlestick / sharps exposure detected</div>
-            <p className="alert-body">Trigger the immediate sharps-injury protocol: source-patient bloods, exposed-staff baseline bloods, and occupational health referral within 1 hour.</p>
+            <p className="alert-body">Trigger the immediate sharps-injury protocol:CAUTION: CAUTION: The severity model was trained on data where 99% of needlestick 
+injuries were recorded as zero lost time. The predicted severity class is 
+unreliable for this injury type and must not be used. Clinical risk — 
+including bloodborne virus exposure — requires immediate occupational health 
+assessment regardless of model output..</p>
           </div>
         </div>
       )}
@@ -591,7 +731,6 @@ function T1() {
           </div>
         </div>
       )}
-
       <div className="card">
         <div className="card-title">
           Class probability distribution
@@ -616,13 +755,11 @@ function T1() {
   );
 }
 
-/* ── T2: RIDDOR ADVISORY ── */
-function T2() {
-  const t = D.riddor_advisory;
+function T2({ data }) {
+  const t = data.riddor_advisory;
   return (
     <Section id="t2" code="T2" title="RIDDOR advisory"
       desc="Conditional advisory only — not a determination. Based on RIDDOR 2013 and facts extracted from the narrative. A competent person must make the final determination when full information is available.">
-
       {t.potentially_applicable.map((cat, i) => (
         <div key={i} className="riddor-cat">
           <div className="riddor-cat-head">
@@ -644,7 +781,6 @@ function T2() {
           )}
         </div>
       ))}
-
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card-title">Follow-up questions to pursue</div>
         <ul className="follow-up-list">
@@ -656,7 +792,6 @@ function T2() {
           ))}
         </ul>
       </div>
-
       <div className="disclaimer">
         <span style={{ fontWeight: 700, flexShrink: 0 }}>ⓘ</span>
         <span><strong>Mandatory:</strong> {t.disclaimer}</span>
@@ -665,28 +800,44 @@ function T2() {
   );
 }
 
-/* ── T3: CAUSAL ANALYSIS ── */
-function T3() {
-  const t = D.causal_analysis;
+function T3({ data }) {
+  const t = data.causal_analysis;
+  const seenMitigations = new Set();
+
   return (
     <Section id="t3" code="T3" title="Causal analysis"
       desc="Contributing causes identified via 4Ps extraction. Each cause searched independently against HSG220 (Health and safety in care homes). Mitigation actions are directions for investigation only.">
 
-      {t.identified_causes.map((cause, i) => (
-        <div key={i} className="cause-block">
-          <div className="cause-head">
-            <span className="cause-type-badge">{cause.cause_type}</span>
-            <span className="cause-desc-text">{cause.description}</span>
-            <span className="cause-ref">{cause.hsg220_section}</span>
+      {t.identified_causes.map((cause, i) => {
+        const uniqueMitigations = cause.mitigation_actions.filter(a => {
+          const normalised = a.trim().toLowerCase();
+          if (seenMitigations.has(normalised)) return false;
+          seenMitigations.add(normalised);
+          return true;
+        });
+
+        return (
+          <div key={i} className="cause-block">
+            <div className="cause-head">
+              <span className="cause-type-badge">{cause.cause_type}</span>
+              <span className="cause-desc-text">{cause.description}</span>
+              <span className="cause-ref">{cause.hsg220_section}</span>
+            </div>
+            <div className="cause-mitigations">
+              <div className="cause-mit-label">Possible mitigation actions to investigate</div>
+              {uniqueMitigations.length > 0 ? (
+                <ul className="cause-mit-list">
+                  {uniqueMitigations.map((a, j) => <li key={j}>{a}</li>)}
+                </ul>
+              ) : (
+                <p style={{ fontSize: 12.5, color: "var(--ink-4)", fontStyle: "italic", lineHeight: 1.5 }}>
+                  All mitigation actions for this cause are addressed in the blocks above.
+                </p>
+              )}
+            </div>
           </div>
-          <div className="cause-mitigations">
-            <div className="cause-mit-label">Possible mitigation actions to investigate</div>
-            <ul className="cause-mit-list">
-              {cause.mitigation_actions.map((a, j) => <li key={j}>{a}</li>)}
-            </ul>
-          </div>
-        </div>
-      ))}
+        );
+      })}
 
       <div className="disclaimer">
         <span style={{ fontWeight: 700, flexShrink: 0 }}>ⓘ</span>
@@ -696,17 +847,15 @@ function T3() {
   );
 }
 
-/* ── T4: PATTERN ANALYSIS ── */
-function T4() {
-  const t = D.pattern_analysis;
-  const sevName = (id) => D.severityClasses[id]?.name || "Unknown";
+function T4({ data }) {
+  const t = data.pattern_analysis;
+  const sevName = (id) => SEVERITY_CLASSES[id]?.name || "Unknown";
   const mechUnknown = t.injury_mechanism && t.injury_mechanism.toLowerCase().startsWith("not extractable");
   const total = Object.values(t.severity_distribution).reduce((s, v) => s + v, 0);
 
   return (
     <Section id="t4" code="T4" title="Population-level patterns"
       desc="Semantic similarity search against 181,374 OSHA H&C sector records. H&C sector subset only — not the full OSHA dataset. No time-based analysis — dataset contains no timestamp at record level.">
-
       <div className="card">
         <div className="card-title">
           Most similar incidents
@@ -721,14 +870,13 @@ function T4() {
           </div>
         ))}
       </div>
-
       <div className="card">
         <div className="card-title">
           Cohort severity distribution
           <span className="card-sub">similar incidents by outcome — static population counts</span>
         </div>
         <div className="dist-chart">
-          {D.severityClasses.map((sc) => {
+          {SEVERITY_CLASSES.map((sc) => {
             const count = t.severity_distribution[String(sc.id)] || 0;
             const pctVal = total > 0 ? (count / total) * 100 : 0;
             return (
@@ -750,15 +898,7 @@ function T4() {
   );
 }
 
-/* ── APP ── */
-function App() {
-  const [confirmed, setConfirmed] = React.useState(false);
-
-  React.useEffect(() => {
-    document.body.style.overflow = confirmed ? "" : "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, [confirmed]);
-
+function ResultsView({ data, narrative, onReset }) {
   const navItems = [
     { id: "narrative", code: "—", label: "Narrative" },
     { id: "t1", code: "T1", label: "Severity prediction" },
@@ -766,18 +906,97 @@ function App() {
     { id: "t3", code: "T3", label: "Causal analysis" },
     { id: "t4", code: "T4", label: "Pattern analysis" },
   ];
+  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
-  const scrollTo = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  return (
+    <div className="layout">
+      <nav className="nav">
+        <div className="nav-section-label">Report sections</div>
+        {navItems.map((item) => (
+          <div key={item.id} className="nav-item" onClick={() => scrollTo(item.id)}>
+            <span className="nav-code">{item.code}</span>
+            {item.label}
+          </div>
+        ))}
+        <div className="nav-divider"/>
+        <div className="nav-section-label">Actions</div>
+        <div className="nav-item" onClick={onReset} style={{ color: "var(--blue)", cursor: "pointer" }}>
+          <span className="nav-code">↩</span>
+          New triage
+        </div>
+      </nav>
+      <main className="content">
+        <div id="narrative" className="narrative-block">
+          <div className="narrative-label">Incident narrative</div>
+          <div className="narrative-text">{narrative}</div>
+        </div>
+        <T1 data={data} />
+        <T2 data={data} />
+        <T3 data={data} />
+        <T4 data={data} />
+      </main>
+    </div>
+  );
+}
 
-  const ts = new Date(D.meta.submittedAt);
+function App() {
+  const [modalConfirmed, setModalConfirmed] = React.useState(false);
+  const [view, setView] = React.useState("input");
+  const [apiData, setApiData] = React.useState(null);
+  const [narrative, setNarrative] = React.useState("");
+  const [meta, setMeta] = React.useState(null);
+  const [apiError, setApiError] = React.useState("");
+
+  React.useEffect(() => {
+    document.body.style.overflow = modalConfirmed ? "" : "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [modalConfirmed]);
+
+  async function handleSubmit(submittedNarrative) {
+    setNarrative(submittedNarrative);
+    setMeta({
+      incidentRef: genRef(),
+      analyst: "S. Clark",
+      submittedAt: new Date().toISOString(),
+      pipelineVersion: "rag-triage-api v0.1.0",
+      modelStack: "stuSterfc/ohs-severity-classifier · map_riddor · analyse_causes · find_patterns",
+    });
+    setView("loading");
+    setApiError("");
+
+    try {
+      const res = await fetch(`${API_URL}/triage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ narrative: submittedNarrative, confirmed_hc_domain: true }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      setApiData(data);
+      setView("results");
+    } catch (e) {
+      setApiError(e.message || "Unknown error");
+      setView("error");
+    }
+  }
+
+  function handleReset() {
+    setView("input");
+    setApiData(null);
+    setNarrative("");
+    setApiError("");
+  }
+
+  const ts = meta ? new Date(meta.submittedAt) : new Date();
   const dateStr = ts.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" });
   const timeStr = ts.toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" });
 
   return (
     <>
-      {!confirmed && <Modal onConfirm={() => setConfirmed(true)} />}
+      {!modalConfirmed && <Modal onConfirm={() => setModalConfirmed(true)} />}
 
       <div className="header">
         <div className="header-brand">
@@ -788,65 +1007,58 @@ function App() {
           </div>
         </div>
         <div className="header-meta">
-          <div className="header-field">
-            <div className="header-field-label">Ref</div>
-            <div className="header-field-value">{D.meta.incidentRef}</div>
-          </div>
-          <div className="header-field">
-            <div className="header-field-label">Date</div>
-            <div className="header-field-value">{dateStr} {timeStr}</div>
-          </div>
-          <div className="header-field">
-            <div className="header-field-label">Analyst</div>
-            <div className="header-field-value">{D.meta.analyst}</div>
-          </div>
-          <div className="header-field">
-            <div className="header-field-label">Version</div>
-            <div className="header-field-value">{D.meta.pipelineVersion}</div>
-          </div>
+          {meta && <>
+            <div className="header-field">
+              <div className="header-field-label">Ref</div>
+              <div className="header-field-value">{meta.incidentRef}</div>
+            </div>
+            <div className="header-field">
+              <div className="header-field-label">Date</div>
+              <div className="header-field-value">{dateStr} {timeStr}</div>
+            </div>
+            <div className="header-field">
+              <div className="header-field-label">Analyst</div>
+              <div className="header-field-value">{meta.analyst}</div>
+            </div>
+            <div className="header-field">
+              <div className="header-field-label">Version</div>
+              <div className="header-field-value">{meta.pipelineVersion}</div>
+            </div>
+          </>}
         </div>
         <div className="header-status">
           <div className="status-dot"></div>
-          <div className="status-text">demo · static</div>
+          <div className="status-text">
+            {view === "results" ? "live · api" : view === "loading" ? "processing" : "ready"}
+          </div>
         </div>
       </div>
 
       <div className="domain-banner">
         <span className="domain-tag">Mandatory</span>
-        <span className="domain-text">{D.domain_disclaimer}</span>
+        <span className="domain-text">DOMAIN CONSTRAINT: This system was trained exclusively on OSHA Health and Social Care sector data from care home settings. It has not been validated outside this domain. All outputs are decision-support tools only — not compliance determinations.</span>
       </div>
 
-      <div className="layout">
-        <nav className="nav">
-          <div className="nav-section-label">Report sections</div>
-          {navItems.map((item) => (
-            <div key={item.id} className="nav-item" onClick={() => scrollTo(item.id)}>
-              <span className="nav-code">{item.code}</span>
-              {item.label}
+      {view === "input"   && <InputForm onSubmit={handleSubmit} />}
+      {view === "loading" && <LoadingView />}
+      {view === "error"   && (
+        <div style={{ maxWidth: 760, margin: "48px auto", padding: "0 24px" }}>
+          <div className="alert alert-danger">
+            <div className="alert-icon">!</div>
+            <div>
+              <div className="alert-title">Pipeline error</div>
+              <div className="alert-body">{apiError}</div>
             </div>
-          ))}
-          <div className="nav-divider"/>
-          <div className="nav-section-label">Pipeline</div>
-          <div className="nav-item" style={{ fontSize: 11, color: "var(--ink-5)", cursor: "default" }}>
-            {D.meta.modelStack}
           </div>
-        </nav>
-
-        <main className="content">
-          <div id="narrative" className="narrative-block">
-            <div className="narrative-label">Incident narrative</div>
-            <div className="narrative-text">{D.narrative}</div>
-          </div>
-
-          <T1 />
-          <T2 />
-          <T3 />
-          <T4 />
-        </main>
-      </div>
+          <button onClick={handleReset} style={{ marginTop: 16, background: "var(--blue)", color: "white", border: "none", borderRadius: "var(--r)", padding: "10px 20px", fontFamily: "var(--font-disp)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            Try again
+          </button>
+        </div>
+      )}
+      {view === "results" && apiData && <ResultsView data={apiData} narrative={narrative} onReset={handleReset} />}
 
       <footer className="footer">
-        <span>{D.meta.pipelineVersion} · {D.meta.modelStack}</span>
+        <span>rag-triage-api v0.1.0 · stuSterfc/ohs-severity-classifier · DistilBERT</span>
         <span>Demo only · No data stored · Not a compliance determination</span>
       </footer>
     </>
