@@ -9,3 +9,5 @@ venv/
 .venv/
 hsg220_clean.txt
 !data/osha_severity_distribution.json
+aws/
+awscliv2.zip
