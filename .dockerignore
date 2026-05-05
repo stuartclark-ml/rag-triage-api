@@ -1,0 +1,15 @@
+venv/
+vectorstore/
+data/
+__pycache__/
+*.pyc
+.git/
+.github/
+tests/
+shap_analysis/
+rag/
+*.md
+.env
+mypy.ini
+pytest.ini
+requirements.in
