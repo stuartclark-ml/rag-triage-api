@@ -1,3 +1,110 @@
+## Session 17 — 2026-05-05
+
+**Session goal:** README, mobile frontend fix, session housekeeping.
+
+**Completed this session:**
+- Confirmed docs/session-notes-s16 PR merged to main
+- README written from scratch — accurate architecture, honest limitations, AWS deployment documented
+- README corrected after code review — LangGraph removed (never implemented), plain sequential pipeline documented, individual endpoints table added, sev-hero flags panel documented
+- Interview prep MD updated — all unanswered Pydantic, API Design, Architecture, and SHAP questions answered; AWS Deployment section added (14 questions)
+- Mobile responsive layout — media queries added for max-width 640px covering: layout collapse, nav rail hidden, header meta hidden, sev-hero vertical stack, prob/dist row label columns reduced, RIDDOR deadline stacked, modal padding reduced, footer stacked
+- sev-hero flags panel inline style converted to CSS class to allow media query targeting
+- New triage button added to bottom of ResultsView for mobile users without nav rail
+- Docker image rebuilt and pushed to ECR as :v4
+- ECS task definition updated, force new deployment
+- Live IP updated: 54.169.243.25
+- Frontend confirmed working on mobile
+- SHAP reference removed from README — shap_analysis/ directory does not exist
+- HITL discussion — individual endpoints already exist as backend building blocks; decided to post LinkedIn now and add HITL stepper frontend as v2
+
+**Open items for next session:**
+- LinkedIn post
+- HITL stepper frontend — calls individual endpoints sequentially with confirmation between each step (backend already complete)
+- SHAP offline notebook in shap_analysis/ — genuine v2 addition
+- HF_TOKEN warning in logs — unauthenticated HuggingFace requests
+
+**Key decisions made this session:**
+- LangGraph was never implemented — sequential pipeline is four direct function calls in main.py
+- HITL deferred to v2 — project is deployable and differentiated now; post LinkedIn first
+- :latest is an anti-pattern in ECS — explicit version tags enforced
+
+**Live endpoint:**
+- API health: http://54.169.243.25:8000/health
+- Frontend: http://54.169.243.25:8000/ui
+- Note: public IP changes on every ECS task restart
+
+## Session 16 — 2026-05-05
+
+**Session goal:** Complete AWS deployment — add StaticFiles mount, rebuild and push Docker image, deploy frontend via ECS Fargate.
+
+**Completed this session:**
+- Added StaticFiles import and mount to main.py — frontend now served at /ui
+- Diagnosed ECS caching issue — task definition was pinned to old image digest, not a tag
+- Switched image tagging strategy from :latest to explicit version tags (:v2, :v3)
+- Fixed hardcoded localhost:8000 API URL in frontend/index.html — replaced with relative URL
+- Rebuilt and pushed :v2 (StaticFiles fix) and :v3 (relative URL fix) to ECR
+- Created task definition revisions :4 and :5 in ECS console
+- Frontend live and pipeline confirmed working end-to-end on AWS
+- feature/aws-deployment merged to main
+
+**Open items for next session:**
+- Mobile responsiveness — modal too large on phone screens, main screen scrolls accidentally
+- README update — document AWS architecture, honest limitations, remove any Streamlit refs
+- SHAP offline notebook in shap_analysis/
+- HF_TOKEN warning in logs — unauthenticated HuggingFace requests
+
+**Key decisions made this session:**
+- :latest tag is an anti-pattern in ECS — use explicit version tags for all future builds
+- Relative API URL (/triage not http://host/triage) is the correct pattern for same-origin deployments
+- Mobile UI fix deferred — to be addressed before LinkedIn post
+
+**Live endpoint:**
+- API health: http://13.250.9.126:8000/health
+- Frontend: http://13.250.9.126:8000/ui
+- Note: public IP changes on every ECS task restart
+
+### Session 15 — 2026-05-04
+**Branch at session end:** feature/aws-deployment — open, not yet merged
+
+**Completed this session:**
+- Branch housekeeping — all stale merged branches deleted locally
+- Dockerfile created with python:3.12-slim base image
+- .dockerignore created — excludes venv, vectorstore, data, rag, tests
+- entrypoint.sh created — downloads vector stores from S3 at container startup
+- S3 bucket created — rag-triage-api-vectorstore in ap-southeast-1
+- Vector stores uploaded to S3 — hsg220 (1.3MB), osha (228MB), riddor (588KB)
+- ECR repository created — rag-triage-api
+- Docker image built locally and pushed to ECR
+- IAM roles created — rag-triage-api-ecs-task-role (S3 read) and ecsTaskExecutionRole (ECR pull)
+- Secrets Manager — GEMINI_API_KEY and HUGGINGFACE_API_TOKEN stored at rag-triage-api/prod
+- ECS cluster created — rag-triage-api-cluster
+- Task definition created — rag-triage-api-task:3 with both IAM roles and Secrets Manager references
+- ECS service created — rag-triage-api-task-service, 1/1 tasks running
+- API live and healthy — http://47.129.55.82:8000/health confirmed
+
+**Next session starts at:**
+- Add StaticFiles mount to main.py — two lines, explained in Session 15
+- Rebuild Docker image locally
+- Push new image to ECR
+- Force ECS service to redeploy using new image
+- Verify frontend accessible at http://<new-public-ip>:8000/ui
+- Then raise PR for feature/aws-deployment and merge to main
+- README update — document AWS architecture, honest limitations, remove Streamlit refs
+
+**Open items carried forward:**
+- Frontend not accessible — main.py missing StaticFiles mount
+- feature/tool-find-patterns branch preserved — contains Phase 2 stepper frontend (app.jsx, 654 lines)
+- SHAP offline notebook in shap_analysis/
+- T4 cohort distribution reframing
+- Consider reordering T4 before T1
+- HF_TOKEN warning in logs — unauthenticated HuggingFace requests
+
+**Architectural decisions confirmed this session:**
+- API keys stored in Secrets Manager, not plain text environment variables
+- Vector stores in S3, not baked into Docker image — correct separation of concerns
+- ECS Fargate over EC2 — no server management required for portfolio project
+- Public IP assigned to task — sufficient for portfolio demo, load balancer deferred
+
 ### Session 14 — 2026-05-01
 **Branch at session end:** main — all work merged
 
