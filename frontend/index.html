@@ -298,6 +298,17 @@ body {
   font-size: 11.5px; color: var(--ink-4); font-family: var(--font-mono);
 }
 
+/* advisory flags panel — targetable by mobile media query */
+.sev-hero-flags-panel {
+  padding: 20px 24px;
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  min-width: 200px;
+}
+
 .prob-list { display: flex; flex-direction: column; gap: 8px; }
 .prob-row {
   display: grid; grid-template-columns: 160px 1fr 52px;
@@ -466,6 +477,106 @@ body {
 @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── MOBILE ── */
+@media (max-width: 640px) {
+
+  /* Header */
+  .header { padding: 0 14px; }
+  .header-brand { padding-right: 14px; margin-right: 0; }
+  .header-meta { display: none; }
+
+  /* Domain banner */
+  .domain-banner {
+    padding: 8px 14px;
+    font-size: 11px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Layout — collapse nav rail to hidden */
+  .layout { grid-template-columns: 1fr; }
+  .nav { display: none; }
+
+  /* Content */
+  .content { padding: 20px 14px; }
+
+  /* Narrative */
+  .narrative-block { padding: 14px; }
+
+  /* Section */
+  .section-title { font-size: 15px; }
+  .section-header { gap: 10px; }
+
+  /* Card */
+  .card { padding: 14px; }
+
+  /* Severity hero — stack vertically */
+  .sev-hero { flex-direction: column; }
+  .sev-hero-class {
+    min-width: unset;
+    flex-direction: row;
+    gap: 16px;
+    padding: 16px;
+    align-items: center;
+    justify-content: flex-start;
+    border-right: none !important;
+    border-bottom: 3px solid;
+  }
+  .sev-hero-label { font-size: 22px; }
+  .sev-hero-detail { padding: 14px 16px; }
+
+  /* Advisory flags panel */
+  .sev-hero-flags-panel {
+    border-left: none !important;
+    border-top: 1px solid var(--line);
+    min-width: unset !important;
+    padding: 12px 16px !important;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    gap: 12px !important;
+  }
+
+  /* Probability rows */
+  .prob-row {
+    grid-template-columns: 90px 1fr 40px;
+    gap: 8px;
+  }
+  .prob-name { font-size: 12px; }
+
+  /* RIDDOR — stack deadline below category */
+  .riddor-cat-head {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .riddor-deadline { max-width: 100%; }
+
+  /* Cause head — wrap ref onto new line */
+  .cause-head { flex-wrap: wrap; gap: 8px; }
+  .cause-ref { width: 100%; margin-top: 2px; }
+
+  /* Incident row */
+  .incident-row { grid-template-columns: 1fr 70px; gap: 10px; }
+
+  /* Distribution chart */
+  .dist-row { grid-template-columns: 72px 1fr 40px; gap: 8px; }
+  .dist-label { font-size: 11.5px; }
+
+  /* Modal */
+  .modal-head { padding: 14px 16px; gap: 10px; }
+  .modal-head-title { font-size: 18px; }
+  .modal-head-sub { font-size: 13px; }
+  .modal-body { padding: 16px; }
+  .modal-head-icon { width: 30px; height: 30px; font-size: 15px; }
+
+  /* Footer */
+  .footer {
+    padding: 16px 14px;
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
+}
 </style>
 </head>
 <body>
@@ -699,7 +810,7 @@ function T1({ data }) {
           </div>
           <div className="sev-hero-model">stuSterfc/ohs-severity-classifier · DistilBERT</div>
         </div>
-        <div style={{ padding: "20px 24px", borderLeft: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: "8px", justifyContent: "center", minWidth: 200 }}>
+        <div className="sev-hero-flags-panel">
           <div style={{ fontSize: 11, color: "var(--ink-4)", fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Advisory flags</div>
           <div style={{ fontSize: 12.5, color: t.needlestick_flag ? "var(--red)" : "var(--ink-5)" }}>
             {t.needlestick_flag ? "⚠ Needlestick detected" : "✓ No needlestick flag"}
@@ -714,11 +825,7 @@ function T1({ data }) {
           <div className="alert-icon">!</div>
           <div>
             <div className="alert-title">Needlestick / sharps exposure detected</div>
-            <p className="alert-body">Trigger the immediate sharps-injury protocol:CAUTION: The severity model was trained on data where 99% of needlestick 
-injuries were recorded as zero lost time. The predicted severity class is 
-unreliable for this injury type and must not be used. Clinical risk — 
-including bloodborne virus exposure — requires immediate occupational health 
-assessment regardless of model output..</p>
+            <p className="alert-body">Trigger the immediate sharps-injury protocol. CAUTION: The severity model was trained on data where 99% of needlestick injuries were recorded as zero lost time. The predicted severity class is unreliable for this injury type and must not be used. Clinical risk — including bloodborne virus exposure — requires immediate occupational health assessment regardless of model output.</p>
           </div>
         </div>
       )}
@@ -934,6 +1041,16 @@ function ResultsView({ data, narrative, onReset }) {
         <T2 data={data} />
         <T3 data={data} />
         <T4 data={data} />
+        <button onClick={onReset} style={{
+          marginTop: 8, marginBottom: 24,
+          background: "var(--blue)", color: "white",
+          border: "none", borderRadius: "var(--r)",
+          padding: "10px 20px",
+          fontFamily: "var(--font-disp)", fontSize: 13, fontWeight: 700,
+          cursor: "pointer", display: "block",
+        }}>
+          ↩ New triage
+        </button>
       </main>
     </div>
   );
