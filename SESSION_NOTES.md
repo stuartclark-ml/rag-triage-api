@@ -1,3 +1,38 @@
+## Session 17 — 2026-05-05
+
+**Session goal:** README, mobile frontend fix, session housekeeping.
+
+**Completed this session:**
+- Confirmed docs/session-notes-s16 PR merged to main
+- README written from scratch — accurate architecture, honest limitations, AWS deployment documented
+- README corrected after code review — LangGraph removed (never implemented), plain sequential pipeline documented, individual endpoints table added, sev-hero flags panel documented
+- Interview prep MD updated — all unanswered Pydantic, API Design, Architecture, and SHAP questions answered; AWS Deployment section added (14 questions)
+- Mobile responsive layout — media queries added for max-width 640px covering: layout collapse, nav rail hidden, header meta hidden, sev-hero vertical stack, prob/dist row label columns reduced, RIDDOR deadline stacked, modal padding reduced, footer stacked
+- sev-hero flags panel inline style converted to CSS class to allow media query targeting
+- New triage button added to bottom of ResultsView for mobile users without nav rail
+- Docker image rebuilt and pushed to ECR as :v4
+- ECS task definition updated, force new deployment
+- Live IP updated: 54.169.243.25
+- Frontend confirmed working on mobile
+- SHAP reference removed from README — shap_analysis/ directory does not exist
+- HITL discussion — individual endpoints already exist as backend building blocks; decided to post LinkedIn now and add HITL stepper frontend as v2
+
+**Open items for next session:**
+- LinkedIn post
+- HITL stepper frontend — calls individual endpoints sequentially with confirmation between each step (backend already complete)
+- SHAP offline notebook in shap_analysis/ — genuine v2 addition
+- HF_TOKEN warning in logs — unauthenticated HuggingFace requests
+
+**Key decisions made this session:**
+- LangGraph was never implemented — sequential pipeline is four direct function calls in main.py
+- HITL deferred to v2 — project is deployable and differentiated now; post LinkedIn first
+- :latest is an anti-pattern in ECS — explicit version tags enforced
+
+**Live endpoint:**
+- API health: http://54.169.243.25:8000/health
+- Frontend: http://54.169.243.25:8000/ui
+- Note: public IP changes on every ECS task restart
+
 ## Session 16 — 2026-05-05
 
 **Session goal:** Complete AWS deployment — add StaticFiles mount, rebuild and push Docker image, deploy frontend via ECS Fargate.
