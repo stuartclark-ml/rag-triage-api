@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>H&C Incident Triage System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #22263a;
+      --border: #2d3148;
+      --text: #e8eaf0;
+      --text-muted: #6b7194;
+      --accent: #4f8ef7;
+      --accent-dim: #1e3a6e;
+      --amber: #f5a623;
+      --amber-dim: #3d2a0a;
+      --green: #3ecf8e;
+      --red: #e05252;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'IBM Plex Sans', sans-serif;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* NAV - matches existing app */
+    nav {
+      background: #13151f;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-logo {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-weight: 500;
+      font-size: 13px;
+      color: white;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .nav-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background 0.4s;
+    }
+    .status-dot.checking { background: var(--amber); animation: pulse 1.2s infinite; }
+    .status-dot.online { background: var(--green); }
+    .status-dot.offline { background: var(--red); }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* CONSTRAINT BANNER */
+    .constraint-bar {
+      background: var(--accent-dim);
+      border-bottom: 1px solid var(--accent);
+      padding: 8px 24px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: #8baee8;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .constraint-label {
+      background: var(--accent);
+      color: white;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+
+    /* MAIN */
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 80px 24px 120px;
+    }
+
+    /* STATE PANELS */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* CHECKING STATE */
+    .checking-state {
+      text-align: center;
+      padding: 60px 0;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 24px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .checking-state p {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    /* ONLINE STATE */
+    .online-state {
+      text-align: center;
+      padding: 60px 0;
+    }
+
+    .status-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 28px;
+    }
+
+    .status-icon.green { background: rgba(62, 207, 142, 0.12); }
+    .status-icon.amber { background: rgba(245, 166, 35, 0.12); }
+
+    .online-state h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .online-state p {
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: white;
+      padding: 12px 28px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 14px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-primary:hover { opacity: 0.85; }
+
+    /* OFFLINE STATE */
+    .offline-state {}
+
+    .offline-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+
+    .offline-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .offline-header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .offline-header p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-family: var(--mono);
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .reasons {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+
+    .reason-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    .reason-item:last-child { border-bottom: none; }
+
+    .reason-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .reason-text { color: var(--text-muted); }
+    .reason-text strong { color: var(--text); font-weight: 500; }
+
+    /* CONTACT CARD */
+    .contact-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+
+    .contact-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .linkedin-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #0a66c2;
+      color: white;
+      padding: 11px 22px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 14px;
+      transition: opacity 0.2s;
+    }
+
+    .linkedin-btn:hover { opacity: 0.88; }
+
+    .linkedin-icon {
+      width: 18px;
+      height: 18px;
+      fill: white;
+    }
+
+    /* RETRY */
+    .retry-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-retry {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 9px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: var(--sans);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .btn-retry:hover { border-color: var(--accent); color: var(--text); }
+
+    .retry-note {
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+    }
+
+    /* FOOTER */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #13151f;
+      border-top: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-brand">
+      <div class="nav-logo">HC</div>
+      <div>
+        <div class="nav-title">rag-triage-api</div>
+        <div class="nav-sub">H&amp;C Incident Triage System</div>
+      </div>
+    </div>
+    <div class="nav-status">
+      <div class="status-dot checking" id="statusDot"></div>
+      <span id="statusText">checking</span>
+    </div>
+  </nav>
+
+  <div class="constraint-bar">
+    <span class="constraint-label">MANDATORY</span>
+    <span>DOMAIN CONSTRAINT: This system was trained exclusively on OSHA Health and Social Care sector data from care home settings. It has not been validated outside this domain. All outputs are decision-support tools only — not compliance determinations.</span>
+  </div>
+
+  <main>
+
+    <!-- CHECKING -->
+    <div class="panel active" id="panelChecking">
+      <div class="checking-state">
+        <div class="spinner"></div>
+        <p>Checking service status...</p>
+      </div>
+    </div>
+
+    <!-- ONLINE -->
+    <div class="panel" id="panelOnline">
+      <div class="online-state">
+        <div class="status-icon green">✓</div>
+        <h1>System is running</h1>
+        <p>The triage API is online and ready to accept incident narratives.</p>
+        <a href="/app.html" class="btn-primary">
+          Open Triage System →
+        </a>
+      </div>
+    </div>
+
+    <!-- OFFLINE -->
+    <div class="panel" id="panelOffline">
+
+      <div class="offline-header">
+        <div class="offline-icon">⚠</div>
+        <div>
+          <h1>Service temporarily unavailable</h1>
+          <p>The triage API could not be reached. This is a portfolio demonstration system hosted on AWS ECS Fargate. It may be offline for one of the reasons below.</p>
+        </div>
+      </div>
+
+      <div class="section-title">Likely reasons</div>
+      <div class="reasons">
+        <div class="reason-item">
+          <div class="reason-icon">🔄</div>
+          <div class="reason-text"><strong>ECS task restart</strong> — The container may have restarted and is still downloading the vector stores from S3. Startup takes approximately 90 seconds. Try again shortly.</div>
+        </div>
+        <div class="reason-item">
+          <div class="reason-icon">📍</div>
+          <div class="reason-text"><strong>IP address changed</strong> — This system runs on a dynamic public IP. If the ECS task was replaced, the address pointing here may need updating. Stuart will resolve this when notified.</div>
+        </div>
+        <div class="reason-item">
+          <div class="reason-icon">🛠</div>
+          <div class="reason-text"><strong>Planned maintenance</strong> — The system may be temporarily offline for deployment of an update or configuration change.</div>
+        </div>
+        <div class="reason-item">
+          <div class="reason-icon">💤</div>
+          <div class="reason-text"><strong>Portfolio demo mode</strong> — As a cost-managed portfolio project, the service is not guaranteed to be available 24/7.</div>
+        </div>
+      </div>
+
+      <div class="section-title">Let Stuart know</div>
+      <div class="contact-card">
+        <p>If you arrived here from Stuart's LinkedIn post and would like to see a live demo, please send a connection request or message. He can spin the service back up and walk you through the system directly.</p>
+        <a href="https://www.linkedin.com/in/stuartclarkOHS" target="_blank" rel="noopener" class="linkedin-btn">
+          <svg class="linkedin-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+          </svg>
+          Message Stuart on LinkedIn
+        </a>
+      </div>
+
+      <div class="retry-row">
+        <button class="btn-retry" onclick="checkStatus()">↺ Try again</button>
+        <span class="retry-note" id="retryNote"></span>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    <span>rag-triage-api v0.1.0 · stuSterfc/ohs-severity-classifier · DistilBERT</span>
+    <span>Demo only · No data stored · Not a compliance determination</span>
+  </footer>
+
+  <script>
+    const API_BASE = '';
+
+    const dot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const retryNote = document.getElementById('retryNote');
+
+    function show(panelId) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(panelId).classList.add('active');
+    }
+
+    function setNavStatus(state, label) {
+      dot.className = 'status-dot ' + state;
+      statusText.textContent = label;
+    }
+
+    async function checkStatus() {
+      show('panelChecking');
+      setNavStatus('checking', 'checking');
+      retryNote.textContent = '';
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(API_BASE + '/health', {
+          signal: controller.signal,
+          mode: 'cors'
+        });
+        clearTimeout(timeout);
+
+        if (res.ok) {
+          setNavStatus('online', 'online');
+          show('panelOnline');
+        } else {
+          throw new Error('non-200');
+        }
+      } catch (e) {
+        setNavStatus('offline', 'offline');
+        retryNote.textContent = 'Last checked: ' + new Date().toLocaleTimeString();
+        show('panelOffline');
+      }
+    }
+
+    checkStatus();
+  </script>
+
+</body>
+</html>
