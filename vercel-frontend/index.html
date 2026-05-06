@@ -211,7 +211,6 @@
     .btn-primary:hover { opacity: 0.85; }
 
     /* OFFLINE STATE */
-    .offline-state {}
 
     .offline-header {
       display: flex;
@@ -496,6 +495,7 @@
         if (res.ok) {
           setNavStatus('online', 'online');
           show('panelOnline');
+          setTimeout(() => { window.location.href = '/app.html'; }, 500);
         } else {
           throw new Error('non-200');
         }
