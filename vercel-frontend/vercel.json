@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/health",           "destination": "http://13.212.184.68:8000/health" },
+    { "source": "/triage",           "destination": "http://13.212.184.68:8000/triage" },
+    { "source": "/predict_severity", "destination": "http://13.212.184.68:8000/predict_severity" },
+    { "source": "/map_riddor",       "destination": "http://13.212.184.68:8000/map_riddor" },
+    { "source": "/analyse_causes",   "destination": "http://13.212.184.68:8000/analyse_causes" },
+    { "source": "/find_patterns",    "destination": "http://13.212.184.68:8000/find_patterns" }
+  ]
+}
