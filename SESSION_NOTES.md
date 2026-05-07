@@ -1,3 +1,43 @@
+## Session 18 — 2026-05-06
+Session goal: Fix HF_TOKEN issue, resolve ECS crash loop, deploy Vercel frontend, finalise LinkedIn post.
+
+Completed this session:
+
+HF_TOKEN warning diagnosed — root cause was variable name mismatch. ECS task definition had HUGGINGFACE_API_TOKEN but the huggingface_hub library reads HF_TOKEN specifically. Fixed by adding HF_TOKEN as a second environment variable in the task definition pointing to the same Secrets Manager ARN
+Pydantic crash loop — caused by accidentally deleting HUGGINGFACE_API_TOKEN when adding HF_TOKEN. ECS task crash-looped across multiple task IDs. Fixed by restoring both environment variables in a new task definition revision. Clean startup confirmed in CloudWatch logs
+ECS IP changed — from 54.169.243.25 to 13.212.184.68. vercel.json updated accordingly
+Vercel account connected to stuartclark-ml GitHub organisation — required installing the Vercel GitHub App on the organisation separately from the personal account
+vercel-frontend/ folder added to repo containing three files: index.html, app.html, vercel.json
+vercel.json proxy rewrites configured for six endpoints: /health, /triage, /predict_severity, /map_riddor, /analyse_causes, /find_patterns — all proxied to ECS. Proxy is server-side so browser never touches HTTP directly, resolving the mixed content problem
+Status/fallback page (index.html) built — on load runs health check against /health, auto-redirects to /app.html after 500ms if ECS is online, shows offline panel with reasons and LinkedIn contact button if ECS is unreachable
+app.html — existing triage frontend HTML deployed to Vercel unchanged. API_URL = "" means all fetch calls are relative paths, intercepted and proxied by Vercel
+Vercel deployment live at https://rag-triage.vercel.app
+Auto-redirect confirmed working — status page checks health, forwards to app automatically
+LinkedIn post finalised — evidence-based opener (HSE 30% RIDDOR miscoding statistic), 3 hashtags, corrected stack (LangGraph removed, sequential pipeline documented), URL updated to Vercel
+
+Open items for next session:
+
+HITL stepper frontend — calls individual endpoints sequentially with confirmation between each step (backend already complete, proxy rewrites already configured)
+SHAP offline notebook in shap_analysis/ — genuine v2 addition
+Transient 500 errors observed on Vercel — caused by intermittent failures in external dependencies (Gemini API, HuggingFace Inference). Not systemic but worth documenting in README as known limitation
+LinkedIn post — publish and begin network expansion into operational risk and insurance verticals
+
+Key decisions made this session:
+
+Both HUGGINGFACE_API_TOKEN and HF_TOKEN must exist in ECS task definition — former for Pydantic Settings, latter for huggingface_hub library
+Vercel proxy rewrite timeout for rewrites is 120 seconds — not subject to the 10 second serverless function limit
+vercel-frontend/ kept as a subfolder in the existing repo — Vercel Root Directory set to vercel-frontend/ in project config
+Status page auto-redirects rather than requiring manual button click — better user experience from LinkedIn
+vercel.json proxy routes include all individual tool endpoints for future HITL stepper, not just /triage
+ECS HTML and Vercel HTML are separate — ECS continues to serve the original frontend at /ui, Vercel serves app.html independently
+
+Live endpoints:
+
+Vercel frontend: https://rag-triage.vercel.app
+ECS API health: http://13.212.184.68:8000/health
+ECS frontend (backup): http://13.212.184.68:8000/ui
+Note: ECS public IP changes on every task restart — update vercel.json when this happens
+
 ## Session 17 — 2026-05-05
 
 **Session goal:** README, mobile frontend fix, session housekeeping.
