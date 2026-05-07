@@ -1,3 +1,124 @@
+# SESSION NOTES — Session 19
+**Date:** 2026-05-07
+**Branch:** feature/hitl-stepper
+**Focus:** HITL stepper frontend — build, test, commit, push
+
+---
+
+## What was completed this session
+
+### 1. Backend — /analyse-causes-amended endpoint
+- Already committed at session start (carried over from Session 18 planning)
+- Confirmed working via smoke test
+
+### 2. vercel.json — endpoint path fixes
+- Already committed at session start
+- All six endpoints confirmed with hyphenated paths
+
+### 3. stepper.html — complete HITL step-by-step frontend
+Built and committed `vercel-frontend/stepper.html`. Full five-step analyst workflow:
+
+**Step 1 — T1 Severity prediction**
+- Displays probability distribution across all five classes
+- Analyst severity override dropdown — pre-selected to model prediction
+- Override feeds as `predicted_incapacitation` into /map-riddor
+- Needlestick and boundary class alert banners
+
+**Step 2 — Facts review**
+- Four editable fields: injury_type, persons_involved, circumstances, known_severity
+- persons_involved normalised from list to string on load
+- Analyst corrections feed directly into /map-riddor body
+
+**Step 3 — T2 RIDDOR advisory**
+- Category checkboxes — analyst unchecks ruled-out categories
+- Follow-up question answer fields (free text, recorded in final report)
+- Ruled-out categories shown in final report with badge-ruled-out badge
+
+**Step 4 — T3 Causal analysis**
+- Remove buttons on each identified cause
+- Add-cause form (cause_type dropdown + description input)
+- If causes amended: amber "Rerun with amended causes" button POSTs to /analyse-causes-amended
+- Rerun result shown in t3_rerun_review view (readonly, no further amendment)
+- analyst-added cause descriptions tracked in analystAddedDescs Set for badge display
+
+**Step 5 — T4 Pattern analysis**
+- Cohort distribution and similar incidents (read-only)
+- Analyst observations textarea — optional free text, appears in final report
+
+**Complete view**
+- Full assembled report with amendment badges throughout:
+  - badge-override — severity class overridden by analyst
+  - badge-amended — facts field amended
+  - badge-analyst — cause added by analyst
+  - badge-ruled-out — RIDDOR category ruled out
+- Nav rail with scroll-to links
+- Read-only — all fields locked
+
+**ConfirmPanel**
+- Fixed to viewport bottom (position: fixed)
+- Primary confirm button + optional amber rerun button
+- Page content has paddingBottom: 120px to prevent overlap
+
+**State machine views:**
+input → t1_loading → t1_review → facts_loading → facts_review → t2_loading → t2_review → t3_loading → t3_review → [t3_rerun_loading → t3_rerun_review] → t4_loading → t4_review → complete / error
+
+**Key implementation notes:**
+- `resolveClassId()` handles Pydantic enum serialising as `{value: N}` or plain integer
+- `API_URL = ""` set before commit for Vercel proxy compatibility
+- T3 rerun: `/analyse-causes-amended` skips extract_causes LLM call, runs HSG220 retrieval directly on provided cause list
+- Error view has per-step retry buttons — retries the exact failed step
+
+### 4. README — RIDDOR single-pass limitation documented
+**Known limitation added:** Follow-up question answers are recorded but do not trigger a RIDDOR rerun. Future improvement: "Rerun RIDDOR with answers" step (same pattern as T3 rerun) where confirmed answers are passed into Gemini context to sharpen conditional categories into confirmed obligations. Current design is intentionally conservative — follow-up questions prompt analyst to pursue information; competent person makes final determination.
+
+### 5. Git commits this session
+```
+fix(frontend): set API_URL to empty string for Vercel proxy
+docs: add HITL RIDDOR limitation to README; feat(frontend): add stepper.html HITL stepper
+feat(api): add /analyse-causes-amended endpoint for HITL cause rerun  [carried from S18]
+```
+
+### 6. Local smoke test
+- Full pipeline tested locally against uvicorn dev server
+- All five steps confirmed working
+- Complete view renders with amendment badges
+
+---
+
+## What was NOT done (deferred)
+
+- ECS Docker rebuild and redeploy — deferred. Original deployment running smoothly, backend working. Redeploy is low-risk and can be done in a single session when needed.
+- Vercel frontend deploy — deferred pending ECS redeploy (IP may have changed on task restart)
+- index.html redirect update (app.html → stepper.html) — deferred
+- PR raise and merge — deferred
+- LinkedIn post publish — deferred
+
+---
+
+## Repository state at session end
+- Branch: feature/hitl-stepper — pushed to origin
+- PR URL: https://github.com/stuartclark-ml/rag-triage-api/pull/new/feature/hitl-stepper
+- ECS IP (last known): 13.212.184.68 — verify before redeploying (changes on task restart)
+- Live Vercel URL: https://rag-triage.vercel.app (serving app.html — stepper not yet deployed)
+
+---
+
+## Next session checklist (when returning to this project)
+1. Verify ECS task is still running and IP is unchanged
+2. Rebuild Docker image with StaticFiles mount confirmed in main.py
+3. Push image to ECR
+4. Redeploy ECS task
+5. Update vercel.json ECS IP if changed
+6. Deploy to Vercel
+7. Update index.html redirect to stepper.html
+8. Raise PR — CI green — merge to main
+9. Publish LinkedIn post
+
+---
+
+## Project 3
+Moved to a separate Claude Project. Do not mix Project 3 context into this project's sessions.
+
 ## Session 18 — 2026-05-06
 Session goal: Fix HF_TOKEN issue, resolve ECS crash loop, deploy Vercel frontend, finalise LinkedIn post.
 
