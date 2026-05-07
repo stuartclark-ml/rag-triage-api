@@ -250,6 +250,8 @@ This is Project 2 of a three-project ML engineering portfolio.
 Positioning: safety-critical document intelligence engineering targeting ML Engineering roles in Insurance and Operational Risk.
 
 ---
+T2 RIDDOR advisory — single-pass only. Follow-up question answers are recorded and appear in the final report but do not trigger a re-evaluation of the advisory. A future improvement would add a "Rerun RIDDOR with answers" step — identical in pattern to the T3 cause rerun — where confirmed answers (e.g. confirmed absence of 9 days) are passed back into the Gemini context to sharpen conditional categories into confirmed obligations. The current design is intentionally conservative: the follow-up questions exist to prompt the analyst to pursue the right information, not to replace the competent-person determination.
+---
 
 ## CI
 

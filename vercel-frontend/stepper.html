@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>H&C Incident Triage — Step-by-Step · rag-triage-api</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root {
+  --ink:        #0f1419;
+  --ink-2:      #2c3340;
+  --ink-3:      #545d6b;
+  --ink-4:      #8a9099;
+  --ink-5:      #bdc2c9;
+  --bg:         #f2f3f5;
+  --surface:    #ffffff;
+  --line:       #e0e2e6;
+  --blue:       #005387;
+  --blue-2:     #0071b8;
+  --blue-tint:  #e3eff8;
+  --green:      #1b5e20;
+  --green-2:    #2e7d32;
+  --green-tint: #e8f5e9;
+  --amber:      #b35c00;
+  --amber-2:    #e65100;
+  --amber-tint: #fff3e0;
+  --red:        #b71c1c;
+  --red-2:      #c62828;
+  --red-tint:   #ffebee;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-disp: 'Syne', sans-serif;
+  --r: 4px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-sans); font-size: 14px; line-height: 1.6; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+
+/* ── MODAL ── */
+.modal-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(15,20,25,0.75); display: flex; align-items: center; justify-content: center; padding: 24px; animation: fadeIn 0.2s ease; }
+.modal { background: var(--surface); max-width: 560px; width: 100%; border-radius: var(--r); overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.3); animation: slideUp 0.25s ease; }
+.modal-head { background: rgb(253,244,78); padding: 20px 28px; display: flex; align-items: center; gap: 14px; }
+.modal-head-icon { width: 36px; height: 36px; border-radius: 50%; border: 3px solid rgb(0,0,0); display: grid; place-items: center; font-family: var(--font-disp); font-size: 18px; font-weight: 800; color: rgb(0,0,0); flex-shrink: 0; }
+.modal-head-text { color: rgb(1,1,1); }
+.modal-head-title { font-family: var(--font-disp); font-size: 24px; font-weight: 700; letter-spacing: 0.01em; }
+.modal-head-sub { font-size: 18px; opacity: 0.75; margin-top: 2px; }
+.modal-body { padding: 28px; }
+.modal-body p { font-size: 13px; color: var(--ink-2); margin-bottom: 16px; line-height: 1.65; }
+.modal-items { list-style: none; margin-bottom: 24px; }
+.modal-items li { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; color: var(--ink-2); line-height: 1.55; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.modal-items li:last-child { border-bottom: none; }
+.modal-items li::before { content: "▪"; color: var(--blue); font-size: 10px; margin-top: 4px; flex-shrink: 0; }
+.modal-confirm { width: 100%; background: var(--blue); color: white; border: none; border-radius: var(--r); padding: 13px 24px; font-family: var(--font-disp); font-size: 14px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: background 0.15s; }
+.modal-confirm:hover { background: var(--blue-2); }
+
+/* ── HEADER ── */
+.header { background: var(--ink); padding: 0 40px; display: flex; align-items: stretch; position: sticky; top: 0; z-index: 50; }
+.header-brand { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-right: 1px solid rgba(255,255,255,0.08); padding-right: 24px; margin-right: 24px; }
+.header-mark { width: 32px; height: 32px; background: var(--blue); border-radius: 2px; display: grid; place-items: center; font-family: var(--font-disp); font-size: 13px; font-weight: 800; color: white; letter-spacing: -0.02em; }
+.header-name { font-family: var(--font-disp); font-size: 14px; font-weight: 700; color: white; letter-spacing: 0.01em; }
+.header-sub { font-size: 11px; color: rgba(255,255,255,0.4); font-family: var(--font-mono); margin-top: 1px; }
+.header-meta { display: flex; align-items: center; flex: 1; }
+.header-field { display: flex; flex-direction: column; padding: 14px 20px; border-right: 1px solid rgba(255,255,255,0.06); }
+.header-field-label { font-size: 10px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-mono); }
+.header-field-value { font-size: 12px; color: rgba(255,255,255,0.75); font-family: var(--font-mono); margin-top: 2px; }
+.header-status { margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 14px 0 14px 20px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green-2); }
+.status-text { font-size: 11px; color: rgba(255,255,255,0.4); font-family: var(--font-mono); }
+
+/* ── DOMAIN BANNER ── */
+.domain-banner { background: var(--blue); padding: 9px 40px; display: flex; align-items: center; gap: 16px; font-family: var(--font-mono); font-size: 11.5px; color: white; letter-spacing: 0.02em; }
+.domain-tag { background: rgba(255,255,255,0.18); padding: 2px 8px; border-radius: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; flex-shrink: 0; }
+.domain-text { opacity: 0.88; }
+
+/* ── LAYOUT ── */
+.layout { display: grid; grid-template-columns: 200px 1fr; max-width: 1200px; margin: 0 auto; }
+.nav { position: sticky; top: 88px; height: calc(100vh - 88px); overflow-y: auto; padding: 28px 0; border-right: 1px solid var(--line); }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 20px; font-size: 12.5px; color: var(--ink-3); cursor: pointer; border-left: 2px solid transparent; transition: all 0.15s; }
+.nav-item:hover { color: var(--ink); background: rgba(0,83,135,0.04); border-left-color: var(--blue); }
+.nav-code { font-family: var(--font-mono); font-size: 10px; background: var(--bg); padding: 1px 5px; border-radius: 2px; color: var(--ink-4); border: 1px solid var(--line); }
+.nav-divider { height: 1px; background: var(--line); margin: 12px 20px; }
+.nav-section-label { padding: 6px 20px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-5); font-family: var(--font-mono); }
+.content { padding: 32px 40px; min-height: 100vh; }
+
+/* ── NARRATIVE ── */
+.narrative-block { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 24px; margin-bottom: 32px; }
+.narrative-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-4); font-family: var(--font-mono); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.narrative-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.narrative-text { font-size: 13.5px; color: var(--ink-2); line-height: 1.7; }
+
+/* ── SECTION ── */
+.section { margin-bottom: 36px; }
+.section-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--ink); }
+.section-code { font-family: var(--font-mono); font-size: 11px; font-weight: 500; background: var(--ink); color: white; padding: 3px 8px; border-radius: 2px; letter-spacing: 0.04em; }
+.section-title { font-family: var(--font-disp); font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+.section-desc { font-size: 12px; color: var(--ink-4); margin-top: 4px; line-height: 1.5; }
+
+/* ── CARDS ── */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 24px; margin-bottom: 12px; }
+.card-title { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); font-family: var(--font-mono); font-weight: 500; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+.card-sub { font-size: 10.5px; color: var(--ink-5); font-weight: 400; }
+
+/* ── SEVERITY HERO ── */
+.sev-hero { display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; margin-bottom: 12px; }
+.sev-hero-class { padding: 24px 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 140px; }
+.sev-hero-label { font-family: var(--font-disp); font-size: 28px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+.sev-hero-band { font-family: var(--font-mono); font-size: 11px; margin-top: 5px; opacity: 0.65; }
+.sev-hero-detail { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+.sev-hero-conf { font-family: var(--font-mono); font-size: 22px; font-weight: 500; color: var(--ink); }
+.sev-hero-conf-label { font-size: 11px; color: var(--ink-4); }
+.sev-hero-flags-panel { padding: 20px 24px; border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; justify-content: center; min-width: 200px; }
+.sev-hero-model { font-size: 11.5px; color: var(--ink-4); font-family: var(--font-mono); }
+.prob-list { display: flex; flex-direction: column; gap: 8px; }
+.prob-row { display: grid; grid-template-columns: 160px 1fr 52px; align-items: center; gap: 12px; }
+.prob-name { font-size: 13px; color: var(--ink-2); }
+.prob-name.predicted { font-weight: 600; color: var(--ink); }
+.prob-track { height: 8px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+.prob-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+.prob-pct { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); text-align: right; }
+.prob-pct.predicted { font-weight: 500; color: var(--ink); }
+
+/* ── ALERTS ── */
+.alert { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: var(--r); border: 1px solid; margin-bottom: 10px; }
+.alert-danger { background: var(--red-tint); border-color: var(--red); }
+.alert-warn   { background: var(--amber-tint); border-color: var(--amber); }
+.alert-info   { background: var(--blue-tint); border-color: var(--blue); }
+.alert-icon { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.alert-danger .alert-icon { background: var(--red);   color: white; }
+.alert-warn   .alert-icon { background: var(--amber); color: white; }
+.alert-info   .alert-icon { background: var(--blue);  color: white; }
+.alert-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.alert-danger .alert-title { color: var(--red); }
+.alert-warn   .alert-title { color: var(--amber-2); }
+.alert-info   .alert-title { color: var(--blue); }
+.alert-body { font-size: 12.5px; color: var(--ink-3); line-height: 1.55; }
+
+/* ── RIDDOR ── */
+.riddor-cat { border: 1px solid var(--line); border-radius: var(--r); margin-bottom: 10px; overflow: hidden; }
+.riddor-cat-head { padding: 14px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.riddor-cat-name { font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.4; }
+.riddor-cat-desc { font-size: 12.5px; color: var(--ink-3); margin-top: 5px; line-height: 1.55; }
+.riddor-deadline { flex-shrink: 0; padding: 5px 10px; border-radius: var(--r); font-family: var(--font-mono); font-size: 11px; font-weight: 500; white-space: normal; max-width: 200px; line-height: 1.45; }
+.deadline-immediate { background: var(--red-tint);   color: var(--red);     border: 1px solid var(--red); }
+.deadline-15day     { background: var(--amber-tint); color: var(--amber-2); border: 1px solid var(--amber); }
+.deadline-record    { background: var(--green-tint); color: var(--green);   border: 1px solid var(--green); }
+.riddor-cat-info { background: var(--bg); border-top: 1px solid var(--line); padding: 12px 18px; }
+.riddor-info-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-4); font-family: var(--font-mono); margin-bottom: 7px; }
+.riddor-info-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.riddor-info-list li { font-size: 12.5px; color: var(--ink-3); padding-left: 14px; position: relative; line-height: 1.5; }
+.riddor-info-list li::before { content: "→"; position: absolute; left: 0; color: var(--amber); font-size: 11px; top: 2px; }
+.follow-up-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.follow-up-list li { font-size: 13px; color: var(--ink-2); line-height: 1.55; padding: 10px 14px; background: var(--bg); border-radius: var(--r); border-left: 3px solid var(--blue); }
+.follow-up-num { font-family: var(--font-mono); font-size: 10px; color: var(--blue); margin-bottom: 2px; font-weight: 500; }
+
+/* ── DISCLAIMER ── */
+.disclaimer { background: var(--blue-tint); border: 1px solid var(--blue); border-radius: var(--r); padding: 12px 16px; font-size: 12px; color: var(--blue); line-height: 1.55; display: flex; gap: 10px; align-items: flex-start; }
+.disclaimer strong { font-weight: 600; }
+
+/* ── CAUSAL ── */
+.cause-block { border: 1px solid var(--line); border-radius: var(--r); margin-bottom: 10px; overflow: hidden; }
+.cause-head { background: var(--amber-tint); border-bottom: 1px solid var(--line); padding: 12px 18px; display: flex; align-items: center; gap: 12px; }
+.cause-type-badge { font-family: var(--font-mono); font-size: 10px; font-weight: 500; background: var(--amber); color: white; padding: 2px 8px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+.cause-desc-text { font-size: 13px; color: var(--ink-2); line-height: 1.5; flex: 1; }
+.cause-ref { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-4); flex-shrink: 0; }
+.cause-mitigations { padding: 14px 18px; }
+.cause-mit-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-4); font-family: var(--font-mono); margin-bottom: 8px; }
+.cause-mit-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.cause-mit-list li { font-size: 12.5px; color: var(--ink-3); line-height: 1.5; padding-left: 14px; position: relative; }
+.cause-mit-list li::before { content: "–"; position: absolute; left: 0; color: var(--ink-4); }
+
+/* ── PATTERNS ── */
+.incident-row { display: grid; grid-template-columns: 1fr 90px; gap: 16px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.incident-row:last-child { border-bottom: none; }
+.incident-excerpt { font-size: 12.5px; color: var(--ink-2); line-height: 1.55; }
+.sev-badge { display: inline-block; padding: 3px 8px; border-radius: 2px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; text-align: center; }
+.sev-0 { background: var(--green-tint); color: var(--green);   border: 1px solid var(--green-tint); }
+.sev-1 { background: #e8f5e9;           color: #2e7d32;        border: 1px solid #c8e6c9; }
+.sev-2 { background: var(--amber-tint); color: var(--amber);   border: 1px solid #ffe0b2; }
+.sev-3 { background: #fbe9e7;           color: var(--amber-2); border: 1px solid #ffccbc; }
+.sev-4 { background: var(--red-tint);   color: var(--red);     border: 1px solid #ffcdd2; }
+.dist-chart { display: flex; flex-direction: column; gap: 10px; }
+.dist-row { display: grid; grid-template-columns: 140px 1fr 60px; align-items: center; gap: 12px; }
+.dist-label { font-size: 12.5px; color: var(--ink-2); }
+.dist-track { height: 14px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+.dist-fill { height: 100%; border-radius: 2px; }
+.dist-pct { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); text-align: right; }
+
+/* ── FOOTER ── */
+.footer { background: var(--ink); color: rgba(255,255,255,0.4); padding: 24px 40px; font-family: var(--font-mono); font-size: 11px; display: flex; align-items: center; justify-content: space-between; line-height: 1.6; margin-top: 40px; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn  { from { opacity: 0; }               to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes spin    { to   { transform: rotate(360deg); } }
+
+/* ── STEP PROGRESS ── */
+.step-progress { background: var(--surface); border-bottom: 1px solid var(--line); padding: 14px 40px; display: flex; align-items: center; }
+.step-item { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.step-bullet { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-mono); font-size: 10px; font-weight: 500; flex-shrink: 0; transition: background 0.2s; }
+.step-connector { flex: 1; height: 1px; margin: 0 10px; min-width: 14px; }
+
+/* ── CONFIRM PANEL (fixed to viewport bottom) ── */
+.confirm-panel { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 2px solid var(--blue); padding: 16px 40px; display: flex; align-items: center; justify-content: space-between; gap: 24px; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 100; }
+.confirm-panel-step { font-family: var(--font-mono); font-size: 10px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+.confirm-panel-msg { font-size: 13px; color: var(--ink-2); }
+.confirm-btn { background: var(--blue); color: white; border: none; border-radius: var(--r); padding: 12px 28px; font-family: var(--font-disp); font-size: 14px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; white-space: nowrap; transition: background 0.15s; flex-shrink: 0; }
+.confirm-btn:hover { background: var(--blue-2); }
+.confirm-btn-amber { background: var(--amber); color: white; border: none; border-radius: var(--r); padding: 12px 28px; font-family: var(--font-disp); font-size: 14px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; white-space: nowrap; transition: background 0.15s; flex-shrink: 0; }
+.confirm-btn-amber:hover { background: var(--amber-2); }
+
+/* ── AMENDMENT BADGES ── */
+.amendment-badge { display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 8px; vertical-align: middle; }
+.badge-override  { background: var(--amber-tint); color: var(--amber-2); border: 1px solid var(--amber); }
+.badge-amended   { background: var(--blue-tint);  color: var(--blue);    border: 1px solid var(--blue); }
+.badge-analyst   { background: var(--green-tint); color: var(--green);   border: 1px solid var(--green); }
+.badge-ruled-out { background: var(--bg);         color: var(--ink-4);   border: 1px solid var(--line); opacity: 0.6; }
+
+/* ── MOBILE ── */
+@media (max-width: 640px) {
+  .header { padding: 0 14px; }
+  .header-brand { padding-right: 14px; margin-right: 0; }
+  .header-meta { display: none; }
+  .domain-banner { padding: 8px 14px; font-size: 11px; flex-wrap: wrap; gap: 8px; }
+  .layout { grid-template-columns: 1fr; }
+  .nav { display: none; }
+  .content { padding: 20px 14px; }
+  .narrative-block { padding: 14px; }
+  .section-title { font-size: 15px; }
+  .card { padding: 14px; }
+  .sev-hero { flex-direction: column; }
+  .sev-hero-class { min-width: unset; flex-direction: row; gap: 16px; padding: 16px; align-items: center; justify-content: flex-start; border-right: none !important; border-bottom: 3px solid; }
+  .sev-hero-label { font-size: 22px; }
+  .sev-hero-detail { padding: 14px 16px; }
+  .sev-hero-flags-panel { border-left: none !important; border-top: 1px solid var(--line); min-width: unset !important; padding: 12px 16px !important; flex-direction: row !important; flex-wrap: wrap; gap: 12px !important; }
+  .prob-row { grid-template-columns: 90px 1fr 40px; gap: 8px; }
+  .prob-name { font-size: 12px; }
+  .riddor-cat-head { flex-direction: column; gap: 10px; }
+  .riddor-deadline { max-width: 100%; }
+  .cause-head { flex-wrap: wrap; gap: 8px; }
+  .cause-ref { width: 100%; margin-top: 2px; }
+  .incident-row { grid-template-columns: 1fr 70px; gap: 10px; }
+  .dist-row { grid-template-columns: 72px 1fr 40px; gap: 8px; }
+  .dist-label { font-size: 11.5px; }
+  .modal-head { padding: 14px 16px; gap: 10px; }
+  .modal-head-title { font-size: 18px; }
+  .modal-head-sub { font-size: 13px; }
+  .modal-body { padding: 16px; }
+  .modal-head-icon { width: 30px; height: 30px; font-size: 15px; }
+  .footer { padding: 16px 14px; flex-direction: column; gap: 6px; text-align: center; }
+  .step-progress { padding: 10px 14px; }
+  .step-label-text { display: none; }
+  .step-connector { min-width: 10px; margin: 0 6px; }
+  .confirm-panel { padding: 12px 14px; flex-direction: column; align-items: stretch; gap: 10px; }
+  .confirm-btn, .confirm-btn-amber { width: 100%; text-align: center; padding: 12px; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+// ─────────────────────────────────────────────
+// CONSTANTS
+// NOTE: Change API_URL to "" before deploying to Vercel
+// ─────────────────────────────────────────────
+const API_URL = "http://localhost:8000";
+
+const SEV_COLORS = ["var(--green)","var(--green-2)","var(--amber)","var(--amber-2)","var(--red)"];
+const SEV_TINTS  = ["var(--green-tint)","#e8f5e9","var(--amber-tint)","#fbe9e7","var(--red-tint)"];
+
+const SEVERITY_CLASSES = [
+  { id: 0, name: "None",     band: "0 days" },
+  { id: 1, name: "Minor",    band: "1–2 days" },
+  { id: 2, name: "Moderate", band: "3–7 days" },
+  { id: 3, name: "Severe",   band: "8–28 days" },
+  { id: 4, name: "Major",    band: "29+ days" },
+];
+
+// Five steps — includes FACTS as an explicit review step between T1 and T2
+const STEP_DEFS = [
+  { num: 1, code: "T1",    label: "Severity",  loadingMsg: "Running severity prediction…" },
+  { num: 2, code: "FACTS", label: "Facts",     loadingMsg: "Extracting incident facts…" },
+  { num: 3, code: "T2",    label: "RIDDOR",    loadingMsg: "Mapping RIDDOR obligations…" },
+  { num: 4, code: "T3",    label: "Causes",    loadingMsg: "Analysing contributing causes…" },
+  { num: 5, code: "T4",    label: "Patterns",  loadingMsg: "Searching OSHA H&C patterns…" },
+];
+
+// ─────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────
+function pct(v) { return (v * 100).toFixed(1) + "%"; }
+function sevColor(id) { return SEV_COLORS[id] || SEV_COLORS[0]; }
+function sevTint(id)  { return SEV_TINTS[id]  || SEV_TINTS[0];  }
+
+function deadlineClass(dl) {
+  if (!dl) return "";
+  const d = dl.toLowerCase();
+  if (d.includes("immediately") || d.includes("without delay")) return "deadline-immediate";
+  if (d.includes("15 days") || d.includes("days")) return "deadline-15day";
+  return "deadline-record";
+}
+
+function genRef() {
+  const d = new Date().toISOString().slice(0,10).replace(/-/g,"");
+  return `INC-${d}-${String(Math.floor(Math.random()*900)+100)}`;
+}
+
+// Map view string to the active step number for the progress bar
+function viewToStep(view) {
+  if (view === "t1_loading" || view === "t1_review") return 1;
+  if (view === "facts_loading" || view === "facts_review") return 2;
+  if (view === "t2_loading" || view === "t2_review") return 3;
+  if (view === "t3_loading" || view === "t3_review" || view === "t3_rerun_loading" || view === "t3_rerun_review") return 4;
+  if (view === "t4_loading" || view === "t4_review") return 5;
+  return 0;
+}
+
+// Resolve Pydantic enum — severity_class may serialise as {value: N} or plain integer
+function resolveClassId(v) { return (typeof v === "object" && v !== null) ? v.value : v; }
+
+// Build predicted_incapacitation string from a severity class id
+function buildIncapLabel(classId) {
+  const sc = SEVERITY_CLASSES[classId];
+  return sc ? `${sc.name} (${sc.band})` : "unknown";
+}
+
+// ─────────────────────────────────────────────
+// MODAL — identical to app.html
+// ─────────────────────────────────────────────
+function Modal({ onConfirm }) {
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-head">
+          <div className="modal-head-icon">i</div>
+          <div className="modal-head-text">
+            <div className="modal-head-title">Important — Before You Continue</div>
+            <div className="modal-head-sub">Please read carefully before using this tool</div>
+          </div>
+        </div>
+        <div className="modal-body">
+          <p>This is a <strong>portfolio demonstration project</strong>. It is not a live regulatory or clinical system.</p>
+          <ul className="modal-items">
+            <li>No incident data is saved, stored, or transmitted</li>
+            <li>All outputs are decision-support tools only — not compliance determinations</li>
+            <li>Trained exclusively on OSHA Health and Social Care care home data — not validated outside this domain</li>
+            <li>Known needlestick blind spot — mandatory flag applied but human review is essential</li>
+            <li>RIDDOR outputs are conditional advisories only — a competent person must make all final determinations</li>
+            <li>Causal analysis surfaces directions for investigation only — not root cause conclusions</li>
+            <li>All regulatory and clinical judgements must be made by a suitably qualified person</li>
+          </ul>
+          <button style={{ background: "var(--green)", color: "white" }} className="modal-confirm" onClick={onConfirm}>
+            I Understand — Continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// INPUT FORM — identical to app.html
+// ─────────────────────────────────────────────
+function InputForm({ onSubmit }) {
+  const [narrative, setNarrative] = React.useState("");
+  const [confirmed, setConfirmed] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const charCount = narrative.trim().length;
+  const ready = charCount >= 50 && confirmed;
+
+  function handleSubmit() {
+    if (charCount < 50) { setError("Narrative must be at least 50 characters."); return; }
+    if (!confirmed) { setError("You must confirm this incident is from a health and social care care home setting."); return; }
+    setError(""); onSubmit(narrative);
+  }
+
+  return (
+    <div style={{ maxWidth: 760, margin: "48px auto", padding: "0 24px" }}>
+      <div className="section-header" style={{ marginBottom: 24 }}>
+        <span className="section-code">INPUT</span>
+        <div>
+          <div className="section-title">Incident narrative</div>
+          <div className="section-desc">Health and social care care home settings only. Minimum 50 characters.</div>
+        </div>
+      </div>
+      <div className="card">
+        <textarea value={narrative} onChange={e => setNarrative(e.target.value)} placeholder="Enter the full incident narrative here…"
+          style={{ width:"100%", minHeight:200, font:"14px/1.65 var(--font-sans)", color:"var(--ink)", background:"var(--bg)", border:"1px solid var(--line)", borderRadius:"var(--r)", padding:"14px 16px", resize:"vertical", outline:"none" }}
+        />
+        <div style={{ display:"flex", justifyContent:"flex-end", marginTop:6 }}>
+          <span style={{ fontFamily:"var(--font-mono)", fontSize:11, color: charCount >= 50 ? "var(--green)" : "var(--ink-4)" }}>
+            {charCount} characters {charCount < 50 ? `(${50 - charCount} more required)` : "✓"}
+          </span>
+        </div>
+        <div style={{ marginTop:16, padding:"12px 16px", background:"var(--blue-tint)", borderRadius:"var(--r)", border:"1px solid var(--blue)", display:"flex", alignItems:"flex-start", gap:12 }}>
+          <input type="checkbox" id="domain-confirm" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} style={{ marginTop:3, accentColor:"var(--blue)", flexShrink:0 }} />
+          <label htmlFor="domain-confirm" style={{ fontSize:13, color:"var(--blue)", lineHeight:1.55, cursor:"pointer" }}>
+            I confirm this incident is from a <strong>health and social care care home setting</strong>.
+          </label>
+        </div>
+        {error && <div className="alert alert-warn" style={{ marginTop:12 }}><div className="alert-icon">!</div><div><div className="alert-body">{error}</div></div></div>}
+        <button onClick={handleSubmit} disabled={!ready} style={{ marginTop:16, width:"100%", background: ready ? "var(--blue)" : "var(--line)", color: ready ? "white" : "var(--ink-4)", border:"none", borderRadius:"var(--r)", padding:"13px 24px", fontFamily:"var(--font-disp)", fontSize:14, fontWeight:700, letterSpacing:"0.03em", cursor: ready ? "pointer" : "not-allowed", transition:"background 0.15s" }}>
+          Begin Step-by-Step Triage →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SECTION WRAPPER — identical to app.html
+// ─────────────────────────────────────────────
+function Section({ id, code, title, desc, children }) {
+  return (
+    <div className="section" id={id}>
+      <div className="section-header">
+        <span className="section-code">{code}</span>
+        <div>
+          <div className="section-title">{title}</div>
+          {desc && <div className="section-desc">{desc}</div>}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// STEP PROGRESS BAR
+// Five steps with done/active/pending visual states.
+// ─────────────────────────────────────────────
+function StepProgress({ view }) {
+  const activeStep = viewToStep(view);
+  const isComplete = view === "complete";
+
+  return (
+    <div className="step-progress">
+      {STEP_DEFS.map((step, i) => {
+        const done   = isComplete || step.num < activeStep;
+        const active = !isComplete && step.num === activeStep;
+        const bulletStyle = done
+          ? { background: "var(--green)", color: "white" }
+          : active
+          ? { background: "var(--blue)",  color: "white" }
+          : { background: "var(--bg)",    color: "var(--ink-4)", border: "1px solid var(--line)" };
+        const connColor = (isComplete || step.num < activeStep) ? "var(--green)" : "var(--line)";
+
+        return (
+          <React.Fragment key={step.num}>
+            <div className="step-item">
+              <div className="step-bullet" style={bulletStyle}>{done ? "✓" : step.code}</div>
+              <span className="step-label-text" style={{ fontSize:12, color: done ? "var(--green)" : active ? "var(--ink)" : "var(--ink-4)", fontWeight: active ? 600 : 400 }}>
+                {step.label}
+              </span>
+            </div>
+            {i < STEP_DEFS.length - 1 && <div className="step-connector" style={{ background: connColor }} />}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// STEP LOADING VIEW
+// Spinner with step-specific context message.
+// ─────────────────────────────────────────────
+function StepLoadingView({ stepNum }) {
+  const step = STEP_DEFS[stepNum - 1];
+  return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"50vh", gap:24 }}>
+      <div style={{ width:48, height:48, borderRadius:"50%", border:"3px solid var(--line)", borderTopColor:"var(--blue)", animation:"spin 0.9s linear infinite" }} />
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontFamily:"var(--font-disp)", fontSize:18, fontWeight:700, color:"var(--ink)", marginBottom:8 }}>{step.loadingMsg}</div>
+        <div style={{ fontFamily:"var(--font-mono)", fontSize:11, color:"var(--ink-4)" }}>Step {stepNum} of 5 · This may take 20–40 seconds</div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// CONFIRM PANEL
+// Fixed to viewport bottom. paddingBottom on page content prevents overlap.
+// Optional amber rerun button shown when cause amendments require a rerun.
+// ─────────────────────────────────────────────
+function ConfirmPanel({ stepLabel, nextLabel, onConfirm, rerunLabel, onRerun }) {
+  return (
+    <div className="confirm-panel">
+      <div>
+        <div className="confirm-panel-step">{stepLabel}</div>
+        <div className="confirm-panel-msg">Review the output above, then confirm to proceed.</div>
+      </div>
+      <div style={{ display:"flex", gap:12, flexShrink:0 }}>
+        {rerunLabel && onRerun && <button className="confirm-btn-amber" onClick={onRerun}>{rerunLabel}</button>}
+        <button className="confirm-btn" onClick={onConfirm}>{nextLabel} →</button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// T1 DISPLAY
+// Severity prediction with analyst class override dropdown.
+// overrideClass feeds as predicted_incapacitation into /map-riddor.
+// ─────────────────────────────────────────────
+function T1Display({ data, overrideClass, onOverrideChange }) {
+  const t = data;
+  const predId = resolveClassId(t.predicted_class);
+  const effectiveId = overrideClass !== null ? overrideClass : predId;
+  const isOverridden = overrideClass !== null && overrideClass !== predId;
+
+  const probEntries = SEVERITY_CLASSES.map(sc => {
+    const key = Object.keys(t.probabilities).find(k => k.toLowerCase().startsWith(sc.name.toLowerCase())) || "";
+    return { sc, val: t.probabilities[key] ?? 0 };
+  }).reverse();
+
+  return (
+    <Section id="t1" code="T1" title="Severity prediction"
+      desc="ML model prediction using stuSterfc/ohs-severity-classifier (DistilBERT). Trained on OSHA H&C sector data.">
+
+      <div className="sev-hero">
+        <div className="sev-hero-class" style={{ background: sevTint(effectiveId), borderRight: `3px solid ${sevColor(effectiveId)}` }}>
+          <div className="sev-hero-label" style={{ color: sevColor(effectiveId) }}>
+            {SEVERITY_CLASSES[effectiveId].name}
+            {isOverridden && <span className="amendment-badge badge-override">Override</span>}
+          </div>
+          <div className="sev-hero-band" style={{ color: sevColor(effectiveId) }}>{SEVERITY_CLASSES[effectiveId].band}</div>
+        </div>
+        <div className="sev-hero-detail">
+          <div>
+            <div className="sev-hero-conf-label">Model confidence</div>
+            <div className="sev-hero-conf">{pct(t.confidence)}</div>
+          </div>
+          {isOverridden && <div style={{ fontSize:11.5, color:"var(--amber-2)", fontFamily:"var(--font-mono)" }}>Model predicted: {SEVERITY_CLASSES[predId].name} · Analyst override active</div>}
+          <div className="sev-hero-model">stuSterfc/ohs-severity-classifier · DistilBERT</div>
+        </div>
+        <div className="sev-hero-flags-panel">
+          <div style={{ fontSize:11, color:"var(--ink-4)", fontFamily:"var(--font-mono)", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>Advisory flags</div>
+          <div style={{ fontSize:12.5, color: t.needlestick_flag ? "var(--red)" : "var(--ink-5)" }}>{t.needlestick_flag ? "⚠ Needlestick detected" : "✓ No needlestick flag"}</div>
+          <div style={{ fontSize:12.5, color: t.middle_severity_flag ? "var(--amber-2)" : "var(--ink-5)" }}>{t.middle_severity_flag ? "⚠ Boundary class — review" : "✓ No boundary flag"}</div>
+        </div>
+      </div>
+
+      {t.needlestick_flag && (
+        <div className="alert alert-danger">
+          <div className="alert-icon">!</div>
+          <div><div className="alert-title">Needlestick / sharps exposure detected</div>
+          <p className="alert-body">Trigger the immediate sharps-injury protocol. The severity model is unreliable for this injury type. Immediate occupational health assessment required regardless of model output.</p></div>
+        </div>
+      )}
+      {t.middle_severity_flag && (
+        <div className="alert alert-warn">
+          <div className="alert-icon">~</div>
+          <div><div className="alert-title">Boundary class — human review recommended</div>
+          <p className="alert-body">Predicted class falls at a boundary where misclassification has reporting consequences. Confirm the lost-time band before any external notification.</p></div>
+        </div>
+      )}
+
+      <div className="card">
+        <div className="card-title">Class probability distribution<span className="card-sub">5-class softmax output</span></div>
+        <div className="prob-list">
+          {probEntries.map(({ sc, val }) => {
+            const isPred = sc.id === predId;
+            return (
+              <div key={sc.id} className="prob-row">
+                <div className={`prob-name ${isPred ? "predicted" : ""}`}>{sc.name} <span style={{ fontFamily:"var(--font-mono)", fontSize:11, color:"var(--ink-5)" }}>({sc.band})</span></div>
+                <div className="prob-track"><div className="prob-fill" style={{ width: pct(val), background: isPred ? sevColor(sc.id) : sevTint(sc.id) }} /></div>
+                <div className={`prob-pct ${isPred ? "predicted" : ""}`}>{pct(val)}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Analyst override — value used as predicted_incapacitation in /map-riddor */}
+      <div className="card">
+        <div className="card-title">Analyst severity override<span className="card-sub">Optional — overrides model prediction for RIDDOR mapping</span></div>
+        <div style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
+          <span style={{ fontSize:13, color:"var(--ink-2)" }}>If you disagree with the model prediction, select the correct class:</span>
+          <select value={effectiveId} onChange={e => onOverrideChange(parseInt(e.target.value))}
+            style={{ font:"13px var(--font-sans)", color:"var(--ink)", background:"var(--bg)", border:"1px solid var(--line)", borderRadius:"var(--r)", padding:"8px 12px", cursor:"pointer", outline:"none" }}>
+            {SEVERITY_CLASSES.map(sc => <option key={sc.id} value={sc.id}>{sc.name} ({sc.band})</option>)}
+          </select>
+          {isOverridden && <span style={{ fontSize:12, color:"var(--amber-2)", fontFamily:"var(--font-mono)" }}>⚠ Override active — passed to RIDDOR mapping</span>}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────
+// FACTS REVIEW PANEL
+// Four editable fields. Analyst corrections feed directly into /map-riddor.
+// persons_involved normalised to string on load.
+// ─────────────────────────────────────────────
+function FactsReviewPanel({ facts, onChange }) {
+  const normalize = v => Array.isArray(v) ? v.join(", ") : (v || "");
+  const [local, setLocal] = React.useState({
+    injury_type:      facts.injury_type      || "",
+    persons_involved: normalize(facts.persons_involved),
+    circumstances:    facts.circumstances    || "",
+    known_severity:   facts.known_severity   || "",
+  });
+
+  function update(field, value) {
+    const updated = { ...local, [field]: value };
+    setLocal(updated); onChange(updated);
+  }
+
+  const FIELDS = [
+    { key:"injury_type",      label:"Injury type",      hint:"What physical injury or harm occurred" },
+    { key:"persons_involved", label:"Persons involved",  hint:"Employee, resident, contractor, or member of public" },
+    { key:"circumstances",    label:"Circumstances",     hint:"Activity and environmental factors at the time" },
+    { key:"known_severity",   label:"Known severity",    hint:"What is currently known about severity and treatment" },
+  ];
+
+  return (
+    <Section id="facts" code="FACTS" title="Extracted facts"
+      desc="Facts extracted from the narrative by the LLM. Amend any field before RIDDOR mapping runs — corrections here directly affect the RIDDOR advisory output.">
+      <div className="card">
+        <div className="alert alert-info" style={{ marginBottom:16 }}>
+          <div className="alert-icon" style={{ fontSize:13 }}>ⓘ</div>
+          <div><div className="alert-title">Review before proceeding</div>
+          <p className="alert-body">At initial reporting, information is often incomplete. Correct any inaccurate field or add details not captured in the narrative. These facts feed directly into the RIDDOR advisory.</p></div>
+        </div>
+        {FIELDS.map(({ key, label, hint }) => (
+          <div key={key} style={{ marginBottom:16 }}>
+            <label style={{ display:"block", fontSize:10, fontFamily:"var(--font-mono)", textTransform:"uppercase", letterSpacing:"0.07em", color:"var(--ink-4)", marginBottom:4 }}>
+              {label} <span style={{ textTransform:"none", letterSpacing:0, color:"var(--ink-5)" }}>— {hint}</span>
+            </label>
+            <textarea value={local[key]} onChange={e => update(key, e.target.value)}
+              style={{ width:"100%", minHeight:52, font:"13px/1.6 var(--font-sans)", color:"var(--ink)", background:"var(--bg)", border:"1px solid var(--line)", borderRadius:"var(--r)", padding:"10px 12px", resize:"vertical", outline:"none", transition:"border-color 0.15s" }}
+              onFocus={e => e.target.style.borderColor = "var(--blue)"}
+              onBlur={e => e.target.style.borderColor = "var(--line)"}
+            />
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────
+// T2 DISPLAY
+// RIDDOR advisory with category checkboxes and follow-up answer fields.
+// ─────────────────────────────────────────────
+function T2Display({ data, checked, onCheck, answers, onAnswer }) {
+  const t = data;
+  return (
+    <Section id="t2" code="T2" title="RIDDOR advisory"
+      desc="Conditional advisory only — not a determination. Uncheck categories you have ruled out. A competent person must make the final determination.">
+      {t.potentially_applicable.map((cat, i) => {
+        const isChecked = checked[i] !== false;
+        return (
+          <div key={i} className="riddor-cat" style={{ opacity: isChecked ? 1 : 0.5 }}>
+            <div className="riddor-cat-head">
+              <div style={{ display:"flex", alignItems:"flex-start", gap:12, flex:1 }}>
+                <input type="checkbox" checked={isChecked} onChange={e => onCheck(i, e.target.checked)}
+                  style={{ marginTop:4, accentColor:"var(--blue)", flexShrink:0, width:16, height:16 }} />
+                <div style={{ flex:1 }}>
+                  <div className="riddor-cat-name">{cat.category}{!isChecked && <span className="amendment-badge badge-ruled-out">Ruled out by analyst</span>}</div>
+                  <div className="riddor-cat-desc">{cat.description}</div>
+                </div>
+              </div>
+              <div className={`riddor-deadline ${deadlineClass(cat.reporting_deadline)}`}>{cat.reporting_deadline}</div>
+            </div>
+            {cat.information_needed.length > 0 && (
+              <div className="riddor-cat-info">
+                <div className="riddor-info-label">Information still required</div>
+                <ul className="riddor-info-list">{cat.information_needed.map((item, j) => <li key={j}>{item}</li>)}</ul>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div className="card" style={{ marginTop:16 }}>
+        <div className="card-title">Follow-up questions<span className="card-sub">Record answers you already know</span></div>
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          {t.follow_up_questions.map((q, i) => (
+            <div key={i}>
+              <div style={{ fontSize:13, color:"var(--ink-2)", marginBottom:6, lineHeight:1.5 }}>
+                <span style={{ fontFamily:"var(--font-mono)", fontSize:10, color:"var(--blue)", marginRight:8 }}>Q{i+1}</span>{q}
+              </div>
+              <textarea value={answers[i] || ""} onChange={e => onAnswer(i, e.target.value)} placeholder="Your answer (optional)…"
+                style={{ width:"100%", minHeight:44, font:"13px/1.55 var(--font-sans)", color:"var(--ink)", background:"var(--bg)", border:"1px solid var(--line)", borderRadius:"var(--r)", padding:"8px 12px", resize:"vertical", outline:"none", transition:"border-color 0.15s" }}
+                onFocus={e => e.target.style.borderColor = "var(--blue)"}
+                onBlur={e => e.target.style.borderColor = "var(--line)"}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="disclaimer"><span style={{ fontWeight:700, flexShrink:0 }}>ⓘ</span><span><strong>Mandatory:</strong> {t.disclaimer}</span></div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────
+// T3 CAUSE REVIEW
+// Active cause list with remove buttons and an add-cause form.
+// Analyst-added causes are flagged for badge display in the complete view.
+// ─────────────────────────────────────────────
+function T3CauseReview({ activeCauses, onRemove, onAdd, disclaimer, readonly }) {
+  const [newType, setNewType] = React.useState("Premises");
+  const [newDesc, setNewDesc] = React.useState("");
+  const [addError, setAddError] = React.useState("");
+  const CAUSE_TYPES = ["Plant", "Premises", "Practices", "People"];
+  const seenMit = new Set();
+
+  function handleAdd() {
+    if (newDesc.trim().length < 5) { setAddError("Description must be at least 5 characters."); return; }
+    setAddError("");
+    onAdd({ cause_type: newType, description: newDesc.trim(), hsg220_section: "Pending rerun", mitigation_actions: [], _analyst: true });
+    setNewDesc("");
+  }
+
+  return (
+    <Section id="t3" code="T3" title="Causal analysis"
+      desc="Contributing causes identified via 4Ps extraction. Remove incorrect causes. Add causes the model missed — additions trigger a rerun against HSG220.">
+
+      {activeCauses.length === 0 && (
+        <div className="alert alert-warn"><div className="alert-icon">!</div><div><div className="alert-body">All causes removed. Add at least one cause before proceeding.</div></div></div>
+      )}
+
+      {activeCauses.map((cause, i) => {
+        const uniqueMit = (cause.mitigation_actions || []).filter(a => {
+          const n = a.trim().toLowerCase();
+          if (seenMit.has(n)) return false; seenMit.add(n); return true;
+        });
+        return (
+          <div key={i} className="cause-block">
+            <div className="cause-head">
+              <span className="cause-type-badge">{cause.cause_type}</span>
+              <span className="cause-desc-text">
+                {cause.description}
+                {cause._analyst && <span className="amendment-badge badge-analyst">Analyst-added</span>}
+              </span>
+              <span className="cause-ref">{cause.hsg220_section}</span>
+              {!readonly && (
+                <button onClick={() => onRemove(i)}
+                  style={{ background:"transparent", border:"1px solid var(--line)", borderRadius:"var(--r)", padding:"4px 10px", fontFamily:"var(--font-mono)", fontSize:10, color:"var(--ink-4)", cursor:"pointer", flexShrink:0, transition:"all 0.15s" }}
+                  onMouseEnter={e => { e.target.style.borderColor="var(--red)"; e.target.style.color="var(--red)"; e.target.style.background="var(--red-tint)"; }}
+                  onMouseLeave={e => { e.target.style.borderColor="var(--line)"; e.target.style.color="var(--ink-4)"; e.target.style.background="transparent"; }}
+                >Remove</button>
+              )}
+            </div>
+            <div className="cause-mitigations">
+              <div className="cause-mit-label">Possible mitigation actions to investigate</div>
+              {cause._analyst && cause.hsg220_section === "Pending rerun"
+                ? <p style={{ fontSize:12.5, color:"var(--ink-4)", fontStyle:"italic" }}>Run the rerun to retrieve HSG220 guidance for this cause.</p>
+                : uniqueMit.length > 0
+                  ? <ul className="cause-mit-list">{uniqueMit.map((a,j) => <li key={j}>{a}</li>)}</ul>
+                  : <p style={{ fontSize:12.5, color:"var(--ink-4)", fontStyle:"italic" }}>All actions addressed in blocks above.</p>
+              }
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Add-cause form — only shown in editable mode */}
+      {!readonly && (
+        <div className="card" style={{ marginTop:8, borderColor:"var(--blue)", borderStyle:"dashed" }}>
+          <div className="card-title">Add a cause<span className="card-sub">Analyst-identified — triggers HSG220 rerun</span></div>
+          <div style={{ display:"flex", gap:12, flexWrap:"wrap", alignItems:"flex-start" }}>
+            <select value={newType} onChange={e => setNewType(e.target.value)}
+              style={{ font:"13px var(--font-sans)", color:"var(--ink)", background:"var(--bg)", border:"1px solid var(--line)", borderRadius:"var(--r)", padding:"8px 12px", cursor:"pointer", outline:"none", flexShrink:0 }}>
+              {CAUSE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <input type="text" value={newDesc} onChange={e => setNewDesc(e.target.value)}
+              placeholder="Describe the contributing factor (e.g. wet floor surface near entrance)…"
+              style={{ flex:1, minWidth:200, font:"13px var(--font-sans)", color:"var(--ink)", background:"var(--bg)", border:"1px solid var(--line)", borderRadius:"var(--r)", padding:"8px 12px", outline:"none", transition:"border-color 0.15s" }}
+              onFocus={e => e.target.style.borderColor="var(--blue)"}
+              onBlur={e => e.target.style.borderColor="var(--line)"}
+            />
+            <button onClick={handleAdd} style={{ background:"var(--green)", color:"white", border:"none", borderRadius:"var(--r)", padding:"8px 18px", fontFamily:"var(--font-disp)", fontSize:13, fontWeight:700, cursor:"pointer", flexShrink:0 }}>Add</button>
+          </div>
+          {addError && <div style={{ marginTop:8, fontSize:12, color:"var(--red)" }}>{addError}</div>}
+          <p style={{ marginTop:10, fontSize:12, color:"var(--ink-4)", lineHeight:1.5 }}>
+            The description is embedded and searched against the HSG220 vector store — be specific about the contributing factor.
+          </p>
+        </div>
+      )}
+
+      <div className="disclaimer"><span style={{ fontWeight:700, flexShrink:0 }}>ⓘ</span><span><strong>Mandatory:</strong> {disclaimer}</span></div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────
+// T4 DISPLAY
+// Pattern analysis with optional analyst notes textarea.
+// ─────────────────────────────────────────────
+function T4Display({ data, analystNotes, onNotesChange, readonly }) {
+  const t = data;
+  const sevId = id => resolveClassId(id);
+  const sevName = id => SEVERITY_CLASSES[sevId(id)]?.name || "Unknown";
+  const total = Object.values(t.severity_distribution).reduce((s, v) => s + v, 0);
+
+  return (
+    <Section id="t4" code="T4" title="Population-level patterns"
+      desc="Semantic similarity search against 181,374 OSHA H&C sector records. No time-based analysis — dataset contains no timestamp at record level.">
+      <div className="card">
+        <div className="card-title">Most similar incidents<span className="card-sub">k-NN · MiniLM-L6-v2 · top 10</span></div>
+        {t.similar_incidents.map((s, i) => (
+          <div key={i} className="incident-row">
+            <div className="incident-excerpt">{s.narrative_excerpt}</div>
+            <div style={{ textAlign:"right" }}><span className={`sev-badge sev-${sevId(s.severity_outcome)}`}>{sevName(s.severity_outcome)}</span></div>
+          </div>
+        ))}
+      </div>
+      <div className="card">
+        <div className="card-title">Cohort severity distribution<span className="card-sub">static population counts</span></div>
+        <div className="dist-chart">
+          {SEVERITY_CLASSES.map(sc => {
+            const count = t.severity_distribution[String(sc.id)] || 0;
+            const pctVal = total > 0 ? (count / total) * 100 : 0;
+            return (
+              <div key={sc.id} className="dist-row">
+                <div className="dist-label">{sc.name} <span style={{ fontFamily:"var(--font-mono)", fontSize:11, color:"var(--ink-5)" }}>({sc.band})</span></div>
+                <div className="dist-track"><div className="dist-fill" style={{ width:`${pctVal}%`, background: sevColor(sc.id) }} /></div>
+                <div className="dist-pct">{pctVal.toFixed(0)}%</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-title">Analyst observations<span className="card-sub">Optional — appears in final report</span></div>
+        {readonly
+          ? analystNotes
+            ? <p style={{ fontSize:13, color:"var(--ink-2)", lineHeight:1.6 }}>{analystNotes}</p>
+            : <p style={{ fontSize:12.5, color:"var(--ink-4)", fontStyle:"italic" }}>No analyst observations recorded.</p>
+          : <textarea value={analystNotes} onChange={e => onNotesChange(e.target.value)}
+              placeholder="Record any observations on the relevance of these patterns to this specific incident…"
+              style={{ width:"100%", minHeight:80, font:"13px/1.6 var(--font-sans)", color:"var(--ink)", background:"var(--bg)", border:"1px solid var(--line)", borderRadius:"var(--r)", padding:"10px 12px", resize:"vertical", outline:"none", transition:"border-color 0.15s" }}
+              onFocus={e => e.target.style.borderColor="var(--blue)"}
+              onBlur={e => e.target.style.borderColor="var(--line)"}
+            />
+        }
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────
+// COMPLETE VIEW
+// Assembled final report with amendment badges throughout.
+// ─────────────────────────────────────────────
+function CompleteView({ narrative, t1Data, t1Override, factsData, factsAmended,
+                        t2Data, riddorChecked, followUpAnswers,
+                        t3Final, analystAddedDescs,
+                        t4Data, analystNotes, onReset }) {
+
+  const predId = resolveClassId(t1Data.predicted_class);
+  const isT1Overridden = t1Override !== null && t1Override !== predId;
+
+  // Detect facts amendments by comparing against original extracted values
+  const origFacts = {
+    injury_type:      factsData.injury_type      || "",
+    persons_involved: Array.isArray(factsData.persons_involved) ? factsData.persons_involved.join(", ") : (factsData.persons_involved || ""),
+    circumstances:    factsData.circumstances    || "",
+    known_severity:   factsData.known_severity   || "",
+  };
+  const isFactsAmended = JSON.stringify(factsAmended) !== JSON.stringify(origFacts);
+
+  const scrollTo = id => document.getElementById(id)?.scrollIntoView({ behavior:"smooth", block:"start" });
+  const seenMit = new Set();
+
+  return (
+    <div className="layout">
+      <nav className="nav">
+        <div className="nav-section-label">Report sections</div>
+        {[{id:"narrative",code:"—",label:"Narrative"},{id:"t1",code:"T1",label:"Severity prediction"},{id:"facts",code:"FACTS",label:"Confirmed facts"},{id:"t2",code:"T2",label:"RIDDOR advisory"},{id:"t3",code:"T3",label:"Causal analysis"},{id:"t4",code:"T4",label:"Pattern analysis"}].map(item => (
+          <div key={item.id} className="nav-item" onClick={() => scrollTo(item.id)}>
+            <span className="nav-code">{item.code}</span>{item.label}
+          </div>
+        ))}
+        <div className="nav-divider"/>
+        <div className="nav-section-label">Actions</div>
+        <div className="nav-item" onClick={onReset} style={{ color:"var(--blue)" }}><span className="nav-code">↩</span>New triage</div>
+      </nav>
+
+      <main className="content" style={{ paddingBottom:60 }}>
+        <div id="narrative" className="narrative-block">
+          <div className="narrative-label">Incident narrative</div>
+          <div className="narrative-text">{narrative}</div>
+        </div>
+
+        {/* T1 — read-only in complete view */}
+        <T1Display data={t1Data} overrideClass={t1Override} onOverrideChange={() => {}} />
+
+        {/* Confirmed facts — amendment badge if fields were changed */}
+        <Section id="facts" code="FACTS" title="Confirmed facts"
+          desc={isFactsAmended ? "Facts amended by analyst prior to RIDDOR mapping." : "Facts as extracted — no analyst amendments."}>
+          <div className="card">
+            {[{key:"injury_type",label:"Injury type"},{key:"persons_involved",label:"Persons involved"},{key:"circumstances",label:"Circumstances"},{key:"known_severity",label:"Known severity"}].map(({ key, label }) => (
+              <div key={key} style={{ marginBottom:14 }}>
+                <div style={{ fontSize:10, fontFamily:"var(--font-mono)", textTransform:"uppercase", letterSpacing:"0.07em", color:"var(--ink-4)", marginBottom:4 }}>
+                  {label}{isFactsAmended && <span className="amendment-badge badge-amended">Amended</span>}
+                </div>
+                <div style={{ fontSize:13, color:"var(--ink-2)", lineHeight:1.55 }}>{factsAmended[key]}</div>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* T2 — ruled-out categories greyed, follow-up answers shown */}
+        <Section id="t2" code="T2" title="RIDDOR advisory" desc="Conditional advisory only. Ruled-out categories shown for the record.">
+          {t2Data.potentially_applicable.map((cat, i) => {
+            const isChecked = riddorChecked[i] !== false;
+            return (
+              <div key={i} className="riddor-cat" style={{ opacity: isChecked ? 1 : 0.5 }}>
+                <div className="riddor-cat-head">
+                  <div style={{ flex:1 }}>
+                    <div className="riddor-cat-name">{cat.category}{!isChecked && <span className="amendment-badge badge-ruled-out">Ruled out by analyst</span>}</div>
+                    <div className="riddor-cat-desc">{cat.description}</div>
+                  </div>
+                  <div className={`riddor-deadline ${deadlineClass(cat.reporting_deadline)}`}>{cat.reporting_deadline}</div>
+                </div>
+                {cat.information_needed.length > 0 && (
+                  <div className="riddor-cat-info">
+                    <div className="riddor-info-label">Information still required</div>
+                    <ul className="riddor-info-list">{cat.information_needed.map((item,j) => <li key={j}>{item}</li>)}</ul>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {t2Data.follow_up_questions.length > 0 && (
+            <div className="card">
+              <div className="card-title">Follow-up questions and analyst answers</div>
+              <ul className="follow-up-list">
+                {t2Data.follow_up_questions.map((q, i) => (
+                  <li key={i}>
+                    <div className="follow-up-num">Q{i+1}</div>{q}
+                    {followUpAnswers[i] && (
+                      <div style={{ marginTop:6, padding:"6px 10px", background:"var(--green-tint)", borderRadius:"var(--r)", borderLeft:"3px solid var(--green)", fontSize:12.5, color:"var(--green)" }}>
+                        <strong>Analyst:</strong> {followUpAnswers[i]}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="disclaimer"><span style={{ fontWeight:700, flexShrink:0 }}>ⓘ</span><span><strong>Mandatory:</strong> {t2Data.disclaimer}</span></div>
+        </Section>
+
+        {/* T3 — final cause list with analyst-added badges, read-only */}
+        <Section id="t3" code="T3" title="Causal analysis" desc="Contributing causes after analyst review.">
+          {t3Final.identified_causes.map((cause, i) => {
+            const isAnalyst = analystAddedDescs.has(cause.description);
+            const uniqueMit = cause.mitigation_actions.filter(a => {
+              const n = a.trim().toLowerCase();
+              if (seenMit.has(n)) return false; seenMit.add(n); return true;
+            });
+            return (
+              <div key={i} className="cause-block">
+                <div className="cause-head">
+                  <span className="cause-type-badge">{cause.cause_type}</span>
+                  <span className="cause-desc-text">{cause.description}{isAnalyst && <span className="amendment-badge badge-analyst">Analyst-added</span>}</span>
+                  <span className="cause-ref">{cause.hsg220_section}</span>
+                </div>
+                <div className="cause-mitigations">
+                  <div className="cause-mit-label">Possible mitigation actions to investigate</div>
+                  {uniqueMit.length > 0 ? <ul className="cause-mit-list">{uniqueMit.map((a,j) => <li key={j}>{a}</li>)}</ul> : <p style={{ fontSize:12.5, color:"var(--ink-4)", fontStyle:"italic" }}>All actions addressed in blocks above.</p>}
+                </div>
+              </div>
+            );
+          })}
+          <div className="disclaimer"><span style={{ fontWeight:700, flexShrink:0 }}>ⓘ</span><span><strong>Mandatory:</strong> {t3Final.disclaimer}</span></div>
+        </Section>
+
+        {/* T4 — read-only with analyst notes displayed */}
+        <T4Display data={t4Data} analystNotes={analystNotes} onNotesChange={() => {}} readonly={true} />
+
+        <button onClick={onReset} style={{ marginTop:16, marginBottom:24, background:"var(--blue)", color:"white", border:"none", borderRadius:"var(--r)", padding:"10px 20px", fontFamily:"var(--font-disp)", fontSize:13, fontWeight:700, cursor:"pointer", display:"block" }}>
+          ↩ New triage
+        </button>
+      </main>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// APP — main state machine
+// ─────────────────────────────────────────────
+function App() {
+  const [modalConfirmed, setModalConfirmed] = React.useState(false);
+  const [view, setView]         = React.useState("input");
+  const [narrative, setNarrative] = React.useState("");
+  const [meta, setMeta]         = React.useState(null);
+  const [apiError, setApiError] = React.useState("");
+  const [errorStep, setErrorStep] = React.useState(null);
+
+  // Raw API responses
+  const [t1Data, setT1Data]       = React.useState(null);
+  const [factsData, setFactsData] = React.useState(null);
+  const [t2Data, setT2Data]       = React.useState(null);
+  const [t3Data, setT3Data]       = React.useState(null);
+  const [t3Rerun, setT3Rerun]     = React.useState(null);
+  const [t4Data, setT4Data]       = React.useState(null);
+
+  // Analyst amendments
+  const [t1Override, setT1Override]     = React.useState(null);
+  const [factsAmended, setFactsAmended] = React.useState(null);
+  const [riddorChecked, setRiddorChecked]     = React.useState({});
+  const [followUpAnswers, setFollowUpAnswers] = React.useState({});
+  const [activeCauses, setActiveCauses]       = React.useState([]);
+  const [analystAddedDescs, setAnalystAddedDescs] = React.useState(new Set());
+  const [analystNotes, setAnalystNotes]   = React.useState("");
+
+  React.useEffect(() => {
+    document.body.style.overflow = modalConfirmed ? "" : "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [modalConfirmed]);
+
+  // ── API CALLS ──
+
+  async function runT1(nar) {
+    setView("t1_loading"); setApiError("");
+    try {
+      const res = await fetch(`${API_URL}/predict-severity`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ narrative: nar, confirmed_hc_domain: true }) });
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail || `HTTP ${res.status}`); }
+      const data = await res.json();
+      setT1Data(data);
+      setT1Override(resolveClassId(data.predicted_class)); // pre-select to model prediction
+      setView("t1_review");
+    } catch(e) { setApiError(e.message || "Unknown error"); setErrorStep("T1"); setView("error"); }
+  }
+
+  async function runFacts() {
+    setView("facts_loading"); setApiError("");
+    try {
+      const res = await fetch(`${API_URL}/extract-facts`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ narrative, confirmed_hc_domain: true }) });
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail || `HTTP ${res.status}`); }
+      const data = await res.json();
+      setFactsData(data);
+      setFactsAmended({
+        injury_type:      data.injury_type      || "",
+        persons_involved: Array.isArray(data.persons_involved) ? data.persons_involved.join(", ") : (data.persons_involved || ""),
+        circumstances:    data.circumstances    || "",
+        known_severity:   data.known_severity   || "",
+      });
+      setView("facts_review");
+    } catch(e) { setApiError(e.message || "Unknown error"); setErrorStep("Facts"); setView("error"); }
+  }
+
+  async function runT2() {
+    setView("t2_loading"); setApiError("");
+    try {
+      // Inject predicted_incapacitation from T1 override into the amended facts
+      const incapLabel = buildIncapLabel(t1Override !== null ? t1Override : resolveClassId(t1Data.predicted_class));
+      const body = { ...factsAmended, predicted_incapacitation: incapLabel };
+      const res = await fetch(`${API_URL}/map-riddor`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail || `HTTP ${res.status}`); }
+      const data = await res.json();
+      setT2Data(data);
+      const initChecked = {};
+      (data.potentially_applicable || []).forEach((_, i) => { initChecked[i] = true; });
+      setRiddorChecked(initChecked);
+      setView("t2_review");
+    } catch(e) { setApiError(e.message || "Unknown error"); setErrorStep("T2"); setView("error"); }
+  }
+
+  async function runT3() {
+    setView("t3_loading"); setApiError("");
+    try {
+      const res = await fetch(`${API_URL}/analyse-causes`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ narrative, confirmed_hc_domain: true }) });
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail || `HTTP ${res.status}`); }
+      const data = await res.json();
+      setT3Data(data);
+      setActiveCauses((data.identified_causes || []).map(c => ({ ...c, _analyst: false })));
+      setView("t3_review");
+    } catch(e) { setApiError(e.message || "Unknown error"); setErrorStep("T3"); setView("error"); }
+  }
+
+  async function runT3Rerun() {
+    setView("t3_rerun_loading"); setApiError("");
+    try {
+      // Record analyst-added descriptions for badge display in complete view
+      setAnalystAddedDescs(new Set(activeCauses.filter(c => c._analyst).map(c => c.description)));
+      const body = { causes: activeCauses.map(c => ({ cause_type: c.cause_type, description: c.description })) };
+      const res = await fetch(`${API_URL}/analyse-causes-amended`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail || `HTTP ${res.status}`); }
+      const data = await res.json();
+      setT3Rerun(data);
+      setView("t3_rerun_review");
+    } catch(e) { setApiError(e.message || "Unknown error"); setErrorStep("T3 rerun"); setView("error"); }
+  }
+
+  async function runT4() {
+    setView("t4_loading"); setApiError("");
+    try {
+      const res = await fetch(`${API_URL}/find-patterns`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ narrative, confirmed_hc_domain: true }) });
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail || `HTTP ${res.status}`); }
+      const data = await res.json();
+      setT4Data(data);
+      setView("t4_review");
+    } catch(e) { setApiError(e.message || "Unknown error"); setErrorStep("T4"); setView("error"); }
+  }
+
+  function handleSubmit(nar) {
+    setNarrative(nar);
+    setMeta({ incidentRef: genRef(), analyst: "S. Clark", submittedAt: new Date().toISOString(), pipelineVersion: "rag-triage-api v0.1.0" });
+    runT1(nar);
+  }
+
+  function handleReset() {
+    setView("input"); setNarrative(""); setMeta(null); setApiError(""); setErrorStep(null);
+    setT1Data(null); setFactsData(null); setT2Data(null); setT3Data(null); setT3Rerun(null); setT4Data(null);
+    setT1Override(null); setFactsAmended(null); setRiddorChecked({}); setFollowUpAnswers({});
+    setActiveCauses([]); setAnalystAddedDescs(new Set()); setAnalystNotes("");
+  }
+
+  // Cause amendment helpers
+  function removeCause(i) { setActiveCauses(prev => prev.filter((_, idx) => idx !== i)); }
+  function addCause(cause) { setActiveCauses(prev => [...prev, cause]); }
+
+  // Causes are amended if any have been removed or analyst-added ones exist
+  const causesAmended = t3Data && (
+    activeCauses.length !== (t3Data.identified_causes || []).length ||
+    activeCauses.some(c => c._analyst)
+  );
+
+  // Final T3 data — rerun result takes precedence if available
+  const t3Final = t3Rerun || t3Data;
+
+  const ts = meta ? new Date(meta.submittedAt) : new Date();
+  const dateStr = ts.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" });
+  const timeStr = ts.toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" });
+  const statusText = view === "complete" ? "complete" : view.includes("loading") ? "processing" : view === "input" ? "ready" : "awaiting confirmation";
+
+  return (
+    <>
+      {!modalConfirmed && <Modal onConfirm={() => setModalConfirmed(true)} />}
+
+      <div className="header">
+        <div className="header-brand">
+          <div className="header-mark">HC</div>
+          <div>
+            <div className="header-name">rag-triage-api</div>
+            <div className="header-sub">Step-by-Step HITL Triage</div>
+          </div>
+        </div>
+        <div className="header-meta">
+          {meta && <>
+            <div className="header-field"><div className="header-field-label">Ref</div><div className="header-field-value">{meta.incidentRef}</div></div>
+            <div className="header-field"><div className="header-field-label">Date</div><div className="header-field-value">{dateStr} {timeStr}</div></div>
+            <div className="header-field"><div className="header-field-label">Analyst</div><div className="header-field-value">{meta.analyst}</div></div>
+            <div className="header-field"><div className="header-field-label">Mode</div><div className="header-field-value">HITL · Step-by-step</div></div>
+          </>}
+        </div>
+        <div className="header-status">
+          <div className="status-dot" />
+          <div className="status-text">{statusText}</div>
+        </div>
+      </div>
+
+      <div className="domain-banner">
+        <span className="domain-tag">Mandatory</span>
+        <span className="domain-text">DOMAIN CONSTRAINT: Trained exclusively on OSHA Health and Social Care care home data. Not validated outside this domain. All outputs are decision-support tools only — not compliance determinations.</span>
+      </div>
+
+      {view !== "input" && view !== "error" && <StepProgress view={view} />}
+
+      {view === "input" && <InputForm onSubmit={handleSubmit} />}
+
+      {/* ── T1 ── */}
+      {view === "t1_loading" && <StepLoadingView stepNum={1} />}
+      {view === "t1_review" && t1Data && (
+        <div style={{ maxWidth:900, margin:"0 auto", padding:"32px 40px 120px" }}>
+          <T1Display data={t1Data} overrideClass={t1Override} onOverrideChange={setT1Override} />
+          <ConfirmPanel stepLabel="Step 1 of 5 — Severity prediction" nextLabel="Confirm — extract facts" onConfirm={runFacts} />
+        </div>
+      )}
+
+      {/* ── FACTS ── */}
+      {view === "facts_loading" && <StepLoadingView stepNum={2} />}
+      {view === "facts_review" && factsAmended && (
+        <div style={{ maxWidth:900, margin:"0 auto", padding:"32px 40px 120px" }}>
+          <FactsReviewPanel facts={factsData} onChange={setFactsAmended} />
+          <ConfirmPanel stepLabel="Step 2 of 5 — Extracted facts" nextLabel="Confirm — run RIDDOR advisory" onConfirm={runT2} />
+        </div>
+      )}
+
+      {/* ── T2 ── */}
+      {view === "t2_loading" && <StepLoadingView stepNum={3} />}
+      {view === "t2_review" && t2Data && (
+        <div style={{ maxWidth:900, margin:"0 auto", padding:"32px 40px 120px" }}>
+          <T2Display data={t2Data} checked={riddorChecked} onCheck={(i,v) => setRiddorChecked(p => ({...p,[i]:v}))} answers={followUpAnswers} onAnswer={(i,v) => setFollowUpAnswers(p => ({...p,[i]:v}))} />
+          <ConfirmPanel stepLabel="Step 3 of 5 — RIDDOR advisory" nextLabel="Confirm — analyse causes" onConfirm={runT3} />
+        </div>
+      )}
+
+      {/* ── T3 ── */}
+      {view === "t3_loading" && <StepLoadingView stepNum={4} />}
+      {view === "t3_review" && t3Data && (
+        <div style={{ maxWidth:900, margin:"0 auto", padding:"32px 40px 120px" }}>
+          <T3CauseReview activeCauses={activeCauses} onRemove={removeCause} onAdd={addCause} disclaimer={t3Data.disclaimer} readonly={false} />
+          <ConfirmPanel
+            stepLabel="Step 4 of 5 — Causal analysis"
+            nextLabel={causesAmended ? "Confirm without rerun" : "Confirm — proceed to patterns"}
+            onConfirm={() => { if (!causesAmended) setAnalystAddedDescs(new Set()); runT4(); }}
+            rerunLabel={causesAmended ? "Rerun with amended causes" : null}
+            onRerun={causesAmended ? runT3Rerun : null}
+          />
+        </div>
+      )}
+
+      {/* ── T3 RERUN ── */}
+      {view === "t3_rerun_loading" && <StepLoadingView stepNum={4} />}
+      {view === "t3_rerun_review" && t3Rerun && (
+        <div style={{ maxWidth:900, margin:"0 auto", padding:"32px 40px 120px" }}>
+          <div className="alert alert-info" style={{ margin:"0 0 16px" }}>
+            <div className="alert-icon">✓</div>
+            <div><div className="alert-title">Rerun complete</div><p className="alert-body">HSG220 retrieval and mitigation extraction updated for your amended cause list.</p></div>
+          </div>
+          <T3CauseReview
+            activeCauses={t3Rerun.identified_causes.map(c => ({ ...c, _analyst: analystAddedDescs.has(c.description) }))}
+            onRemove={() => {}} onAdd={() => {}} disclaimer={t3Rerun.disclaimer} readonly={true}
+          />
+          <ConfirmPanel stepLabel="Step 4 of 5 — Causal analysis (rerun)" nextLabel="Confirm — proceed to patterns" onConfirm={runT4} />
+        </div>
+      )}
+
+      {/* ── T4 ── */}
+      {view === "t4_loading" && <StepLoadingView stepNum={5} />}
+      {view === "t4_review" && t4Data && (
+        <div style={{ maxWidth:900, margin:"0 auto", padding:"32px 40px 120px" }}>
+          <T4Display data={t4Data} analystNotes={analystNotes} onNotesChange={setAnalystNotes} readonly={false} />
+          <ConfirmPanel stepLabel="Step 5 of 5 — Pattern analysis" nextLabel="Confirm — assemble final report" onConfirm={() => setView("complete")} />
+        </div>
+      )}
+
+      {/* ── COMPLETE ── */}
+      {view === "complete" && t1Data && t2Data && t3Final && t4Data && (
+        <CompleteView
+          narrative={narrative} t1Data={t1Data} t1Override={t1Override}
+          factsData={factsData} factsAmended={factsAmended}
+          t2Data={t2Data} riddorChecked={riddorChecked} followUpAnswers={followUpAnswers}
+          t3Final={t3Final} analystAddedDescs={analystAddedDescs}
+          t4Data={t4Data} analystNotes={analystNotes} onReset={handleReset}
+        />
+      )}
+
+      {/* ── ERROR ── */}
+      {view === "error" && (
+        <div style={{ maxWidth:760, margin:"48px auto", padding:"0 24px" }}>
+          <div className="alert alert-danger">
+            <div className="alert-icon">!</div>
+            <div><div className="alert-title">Step {errorStep} failed</div><div className="alert-body">{apiError}</div></div>
+          </div>
+          <div style={{ display:"flex", gap:12, marginTop:16 }}>
+            <button onClick={() => {
+              if (errorStep === "T1")       runT1(narrative);
+              if (errorStep === "Facts")    runFacts();
+              if (errorStep === "T2")       runT2();
+              if (errorStep === "T3")       runT3();
+              if (errorStep === "T3 rerun") runT3Rerun();
+              if (errorStep === "T4")       runT4();
+            }} style={{ background:"var(--blue)", color:"white", border:"none", borderRadius:"var(--r)", padding:"10px 20px", fontFamily:"var(--font-disp)", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+              Retry {errorStep}
+            </button>
+            <button onClick={handleReset} style={{ background:"transparent", color:"var(--ink-3)", border:"1px solid var(--line)", borderRadius:"var(--r)", padding:"10px 20px", fontFamily:"var(--font-disp)", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+              Start over
+            </button>
+          </div>
+        </div>
+      )}
+
+      <footer className="footer">
+        <span>rag-triage-api v0.1.0 · stuSterfc/ohs-severity-classifier · DistilBERT</span>
+        <span>Demo only · No data stored · Not a compliance determination</span>
+      </footer>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
