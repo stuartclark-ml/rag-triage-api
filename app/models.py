@@ -151,6 +151,38 @@ class PatternAnalysis(BaseModel):
         description="Identified injury mechanism used for distribution lookup."
     )
 
+class AmendedCause(BaseModel):
+    """A single cause entry supplied by the analyst after reviewing T3 output."""
+
+    model_config = ConfigDict(frozen=True)
+
+    cause_type: str = Field(
+        description="4Ps cause category. Must be one of: Plant, Premises, Practices, People."
+    )
+    description: str = Field(
+        description=(
+            "Concise description of the contributing factor. "
+            "This string is embedded and searched against the HSG220 vector store — "
+            "quality of retrieval depends on specificity of description."
+        )
+    )
+
+
+class AmendedCausesRequest(BaseModel):
+    """
+    Request body for /analyse-causes-amended.
+
+    Accepts the full analyst-amended cause list — both causes retained from
+    the original model output and any analyst-added causes. Skips LLM cause
+    extraction and runs HSG220 retrieval and mitigation extraction directly.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    causes: list[AmendedCause] = Field(
+        description="Full amended cause list. Must contain at least one cause.",
+        min_length=1,
+    )
 
 class TriageResponse(BaseModel):
     model_config = ConfigDict(frozen=True)

@@ -155,3 +155,54 @@ def analyse_causes(narrative: str) -> dict:
         "identified_causes": identified_causes,
         "disclaimer": DISCLAIMER,
     }
+    
+def analyse_causes_from_list(causes: list[dict]) -> dict:
+    """
+    Run HSG220 retrieval and mitigation extraction on a pre-defined cause list.
+
+    Skips LLM cause extraction — used when the analyst has amended the
+    cause list and a rerun against the original narrative is not appropriate.
+
+    Args:
+        causes: list of dicts with 'cause_type' and 'description' keys.
+
+    Returns:
+        dict matching the CausalAnalysis response structure.
+    """
+    # Retrieve HSG220 chunks for each cause independently
+    causes_with_chunks = []
+    for cause in causes:
+        chunks = retrieve_hsg220_for_cause(cause["description"])
+        causes_with_chunks.append({
+            "cause_type": cause["cause_type"],
+            "description": cause["description"],
+            "chunks": chunks,
+        })
+
+    # Extract mitigations across the full cause list in one LLM call
+    # so deduplication context is preserved across causes
+    mitigations = extract_mitigations(causes_with_chunks)
+
+    mitigation_map = {
+        item["cause_type"]: item.get("mitigation_actions", [])
+        for item in mitigations
+    }
+
+    # Assemble final cause objects with section references and mitigations
+    identified_causes = []
+    for item in causes_with_chunks:
+        section_refs = ", ".join(
+            f"{c['metadata'].get('chapter', 'Unknown')} (pp.{c['metadata'].get('pages', '')})"
+            for c in item["chunks"]
+        )
+        identified_causes.append({
+            "cause_type": item["cause_type"],
+            "description": item["description"],
+            "hsg220_section": section_refs,
+            "mitigation_actions": mitigation_map.get(item["cause_type"], []),
+        })
+
+    return {
+        "identified_causes": identified_causes,
+        "disclaimer": DISCLAIMER,
+    }

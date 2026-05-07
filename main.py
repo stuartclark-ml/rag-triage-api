@@ -2,9 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.config import get_settings
-from app.models import IncidentRequest, TriageResponse, SeverityPrediction, PatternAnalysis, ConfirmedFactsRequest, RiddorAdvisory, CausalAnalysis
+from app.models import AmendedCausesRequest, IncidentRequest, TriageResponse, SeverityPrediction, PatternAnalysis, ConfirmedFactsRequest, RiddorAdvisory, CausalAnalysis
 from app.tools.predict_severity import predict_severity
-from app.tools.analyse_causes import analyse_causes
+from app.tools.analyse_causes import analyse_causes, analyse_causes_from_list
 from app.tools.map_riddor import extract_facts, map_riddor
 from app.tools.find_patterns import find_patterns
 
@@ -60,6 +60,19 @@ async def run_map_riddor(request: ConfirmedFactsRequest):
 @app.post("/analyse-causes", response_model=CausalAnalysis)
 async def run_analyse_causes(request: IncidentRequest):
     result = analyse_causes(request.narrative)
+    return CausalAnalysis(**result)
+
+@app.post("/analyse-causes-amended", response_model=CausalAnalysis)
+async def run_analyse_causes_amended(request: AmendedCausesRequest):
+    """
+    Rerun causal analysis on an analyst-amended cause list.
+
+    Skips LLM cause extraction — used when the analyst has added or removed
+    causes after reviewing the initial /analyse-causes output. Runs HSG220
+    retrieval and mitigation extraction on the provided cause list directly.
+    """
+    causes = [c.model_dump() for c in request.causes]
+    result = analyse_causes_from_list(causes)
     return CausalAnalysis(**result)
 
 @app.post("/find-patterns", response_model=PatternAnalysis)
