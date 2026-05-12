@@ -2,9 +2,9 @@
 
 **Risk Event Classification and Regulatory Mapping System**
 
-An agentic FastAPI service that takes a health and social care workplace incident narrative as input and returns a structured triage analysis. The system combines a live fine-tuned BERT classifier with retrieval-augmented generation (RAG) over three regulatory knowledge bases, run as a sequential four-tool pipeline.
+An agentic FastAPI service that takes a health and social care workplace incident narrative as input and returns a structured triage analysis. The system combines a live fine-tuned BERT classifier with retrieval-augmented generation (RAG) over three regulatory knowledge bases, run as a sequential four-tool pipeline and deployed across AWS ECS Fargate (API) and Vercel (frontend with proxy).
 
-Live endpoint: http://13.229.251.82/ui
+**Live:** [https://rag-triage.vercel.app](https://rag-triage.vercel.app)
 
 ---
 
@@ -101,6 +101,41 @@ Two flags are hardcoded on the severity prediction regardless of model output.
 
 **`middle_severity_flag`** — raised when the predicted class is Moderate (2) or Severe (3). These classes have higher distributional uncertainty in the training data. Human review is recommended.
 
+### Frontend Proxy Architecture
+
+The public-facing deployment uses two hosting providers working together. Vercel hosts the frontend and acts as a reverse proxy in front of ECS.
+
+```
+Browser
+   │
+   │  HTTPS
+   ▼
+Vercel (https://rag-triage.vercel.app)
+   │
+   ├──  index.html — status/fallback page
+   │      health-check on load, auto-redirect to /app.html
+   │      offline panel + LinkedIn contact button if ECS unreachable
+   │
+   ├──  app.html — triage frontend (API_URL = "" — relative paths)
+   │
+   └──  vercel.json — server-side rewrites
+          /health, /triage, /predict_severity, /map_riddor,
+          /analyse_causes, /find_patterns
+          120-second proxy timeout
+          │
+          │  HTTP (server-to-server)
+          ▼
+       ECS Fargate (FastAPI + RAG pipeline)
+```
+
+The frontend was originally served directly from FastAPI via `StaticFiles` at `/ui`. That endpoint still exists as a backup. The Vercel layer was added to solve three problems:
+
+**1. Mixed-content blocking.** ECS Fargate without a load balancer exposes only an HTTP endpoint. A modern browser refuses to make HTTP `fetch` calls from an HTTPS page. Serving the frontend over HTTPS via Vercel and proxying requests server-side means the browser only ever sees HTTPS — the HTTP-to-ECS hop happens between Vercel's edge and ECS, where the mixed-content policy does not apply.
+
+**2. Proxy timeout headroom.** Vercel's default 10-second serverless function timeout would kill any request to the RAG pipeline (which runs 30–60 seconds end-to-end). The `vercel.json` rewrites use the 120-second proxy timeout instead, which accommodates the full sequential pipeline including embedding lookups, Gemini calls, and HuggingFace inference.
+
+**3. Graceful degradation.** The ECS task gets a new public IP on every restart (no load balancer in this configuration — appropriate for portfolio cost). `vercel.json` is the single source of truth for the current IP. The status page health-checks ECS on every page load and either auto-redirects to the app or shows an offline panel with LinkedIn contact details. A dead IP behind the URL does not produce a dead URL.
+
 ---
 
 ## RAG Knowledge Bases
@@ -135,7 +170,16 @@ For the OSHA knowledge base, the organisation size prefix (everything before and
 
 Individual tool endpoints allow each component to be tested in isolation. The frontend uses `/triage`.
 
-Interactive API docs: `http://13.229.251.82/docs`
+### Running endpoints locally
+
+When running locally with `uvicorn main:app --reload`, the full API surface is exposed at `http://localhost:8000`:
+
+- `http://localhost:8000/ui` — single-page frontend
+- `http://localhost:8000/docs` — interactive Swagger UI (auto-generated from FastAPI route signatures and Pydantic models)
+- `http://localhost:8000/openapi.json` — OpenAPI schema
+- Individual endpoints listed in the table above
+
+The Vercel-hosted deployment at `https://rag-triage.vercel.app` proxies only the six runtime endpoints (`/health`, `/triage`, and the four individual tool endpoints) to ECS. The Swagger UI is not exposed in production by design — `/docs` would leak full schema and route signatures to the public internet, which is appropriate for local development but not for a public deployment.
 
 ---
 
@@ -145,7 +189,7 @@ Interactive API docs: `http://13.229.251.82/docs`
 ECR  →  ECS Fargate  ←  S3 (vector stores)
                 ↑
          Secrets Manager
-      (GEMINI_API_KEY, HF_TOKEN)
+   (GEMINI_API_KEY, HUGGINGFACE_API_TOKEN, HF_TOKEN)
 ```
 
 | Service | Purpose |
@@ -156,9 +200,9 @@ ECR  →  ECS Fargate  ←  S3 (vector stores)
 | Secrets Manager | Stores API keys — never in environment variables or baked into the image |
 | IAM | Task role (S3 read) + execution role (ECR pull, Secrets Manager read) |
 
-The frontend is a single-page HTML file served by FastAPI via `StaticFiles`. No separate hosting is required.
-
 **Image tagging:** Docker images are tagged with explicit version numbers (`:v1`, `:v2`, ...) rather than `:latest`. ECS task definitions pin to a specific tag. This avoids the caching behaviour where ECS continues running a stale image digest even after a new image is pushed.
+
+**HuggingFace token dual-variable.** Two environment variables point to the same Secrets Manager ARN in the ECS task definition — `HUGGINGFACE_API_TOKEN` (read by Pydantic Settings at application startup) and `HF_TOKEN` (read by the `huggingface_hub` library when downloading model weights). Removing either causes a different failure mode: dropping `HUGGINGFACE_API_TOKEN` triggers a Pydantic validation error and crash-loop at startup; dropping `HF_TOKEN` produces an unauthenticated request warning at inference time. Both must be present.
 
 ---
 
@@ -174,10 +218,14 @@ The frontend is a single-page HTML file served by FastAPI via `StaticFiles`. No 
 | LLM | Gemini 2.5 Flash (Google PAYG) |
 | PDF ingestion | PyMuPDF (fitz) |
 | Containerisation | Docker |
-| Deployment | AWS ECS Fargate |
+| API hosting | AWS ECS Fargate |
+| Frontend hosting | Vercel (proxy + status page) |
+| Object storage | AWS S3 |
+| Secrets | AWS Secrets Manager |
 | CI | GitHub Actions — ruff, mypy (pydantic plugin), pytest |
 | Python | 3.12.3, WSL2 Ubuntu |
 
+---
 
 ## Running Locally
 
@@ -196,6 +244,7 @@ Set environment variables:
 ```bash
 export GEMINI_API_KEY=your_key
 export HUGGINGFACE_API_TOKEN=your_token
+export HF_TOKEN=your_token
 ```
 
 Build vector stores (first run only):
@@ -212,8 +261,7 @@ Run the API:
 uvicorn main:app --reload
 ```
 
-Frontend: `http://localhost:8000/ui`
-API docs: `http://localhost:8000/docs`
+Then open `http://localhost:8000/ui` for the frontend or `http://localhost:8000/docs` for the Swagger UI.
 
 ---
 
@@ -234,6 +282,10 @@ API docs: `http://localhost:8000/docs`
 - Causal analysis surfaces mitigation directions for investigation. It does not identify root causes. Root cause determination requires a full investigation by a competent person.
 - The system has not been evaluated against a labelled ground truth for RIDDOR mapping or causal extraction accuracy.
 
+**Runtime**
+- The pipeline depends on two external services — Gemini 2.5 Flash and the HuggingFace Inference API. Transient 500-level errors from either propagate to the user as a failed `/triage` request. The system does not currently implement retry, circuit-breaker, or fallback model behaviour.
+- The ECS task is configured without a load balancer (single-task service, public IP). On task restart the public IP changes. `vercel.json` is updated manually when this happens.
+
 ---
 
 ## Portfolio Context
@@ -245,7 +297,6 @@ This is Project 2 of a three-project ML engineering portfolio.
 | Dissertation | DistilBERT/ModernBERT + SHAP to predict workplace incident severity from OSHA narratives. Model live at `stuSterfc/ohs-severity-classifier` |
 | Project 1 | OHS certificate intelligence parser — FastAPI, PyMuPDF, Tesseract OCR, Gemini 2.5 Flash, Streamlit, Railway |
 | **Project 2** | **This project — RAG triage API for H&C care home incidents** |
-
 
 Positioning: safety-critical document intelligence engineering targeting ML Engineering roles in Insurance and Operational Risk.
 
