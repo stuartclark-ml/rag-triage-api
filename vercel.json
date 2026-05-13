@@ -1,0 +1,11 @@
+{
+  "outputDirectory": "vercel-frontend",
+  "rewrites": [
+    { "source": "/health",           "destination": "http://3.0.103.1:8000/health" },
+    { "source": "/triage",           "destination": "http://3.0.103.1:8000/triage" },
+    { "source": "/predict_severity", "destination": "http://3.0.103.1:8000/predict_severity" },
+    { "source": "/map_riddor",       "destination": "http://3.0.103.1:8000/map_riddor" },
+    { "source": "/analyse_causes",   "destination": "http://3.0.103.1:8000/analyse_causes" },
+    { "source": "/find_patterns",    "destination": "http://3.0.103.1:8000/find_patterns" }
+  ]
+}
