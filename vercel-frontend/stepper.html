@@ -1207,10 +1207,10 @@ function App() {
           <T3CauseReview activeCauses={activeCauses} onRemove={removeCause} onAdd={addCause} disclaimer={t3Data.disclaimer} readonly={false} />
           <ConfirmPanel
             stepLabel="Step 4 of 5 — Causal analysis"
-            nextLabel={causesAmended ? "Confirm without rerun" : "Confirm — proceed to patterns"}
+            nextLabel="Confirm — proceed to patterns"
             onConfirm={() => { if (!causesAmended) setAnalystAddedDescs(new Set()); runT4(); }}
-            rerunLabel={causesAmended ? "Rerun with amended causes" : null}
-            onRerun={causesAmended ? runT3Rerun : null}
+            rerunLabel={null}
+            onRerun={null}
           />
         </div>
       )}
