@@ -400,7 +400,7 @@
         <div class="status-icon green">✓</div>
         <h1>System is running</h1>
         <p>The triage API is online and ready to accept incident narratives.</p>
-        <a href="/app.html" class="btn-primary">
+        <a href="/stepper.html" class="btn-primary">
           Open Triage System →
         </a>
       </div>
@@ -495,7 +495,7 @@
         if (res.ok) {
           setNavStatus('online', 'online');
           show('panelOnline');
-          setTimeout(() => { window.location.href = '/app.html'; }, 500);
+          setTimeout(() => { window.location.href = '/stepper.html'; }, 500);
         } else {
           throw new Error('non-200');
         }
