@@ -1,13 +1,13 @@
 {
   "outputDirectory": "vercel-frontend",
   "rewrites": [
-    { "source": "/health",           "destination": "http://13.212.129.12:8000/health" },
-    { "source": "/extract-facts",    "destination": "http://13.212.129.12:8000/extract-facts" },
-    { "source": "/predict-severity", "destination": "http://13.212.129.12:8000/predict-severity" },
-    { "source": "/map-riddor",       "destination": "http://13.212.129.12:8000/map-riddor" },
-    { "source": "/analyse-causes",   "destination": "http://13.212.129.12:8000/analyse-causes" },
-    { "source": "/analyse-causes-amended", "destination": "http://13.212.129.12:8000/analyse-causes-amended" },
-    { "source": "/find-patterns",    "destination": "http://13.212.129.12:8000/find-patterns" },
-    { "source": "/triage",           "destination": "http://13.212.129.12:8000/triage" }
+    { "source": "/health",           "destination": "http://47.129.225.171:8000/health" },
+    { "source": "/extract-facts",    "destination": "http://47.129.225.171:8000/extract-facts" },
+    { "source": "/predict-severity", "destination": "http://47.129.225.171:8000/predict-severity" },
+    { "source": "/map-riddor",       "destination": "http://47.129.225.171:8000/map-riddor" },
+    { "source": "/analyse-causes",   "destination": "http://47.129.225.171:8000/analyse-causes" },
+    { "source": "/analyse-causes-amended", "destination": "http://47.129.225.171:8000/analyse-causes-amended" },
+    { "source": "/find-patterns",    "destination": "http://47.129.225.171:8000/find-patterns" },
+    { "source": "/triage",           "destination": "http://47.129.225.171:8000/triage" }
   ]
 }
