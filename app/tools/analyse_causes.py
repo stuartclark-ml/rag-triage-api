@@ -1,7 +1,9 @@
 import json
+
 import chromadb
-from sentence_transformers import SentenceTransformer
 from google import genai
+from sentence_transformers import SentenceTransformer
+
 from app.config import get_settings
 
 DISCLAIMER = (
@@ -48,8 +50,7 @@ Return only a valid JSON array."""
     raw = (response.text or "").strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
+        raw = raw.removeprefix("json")
     return json.loads(raw.strip())
 
 
@@ -114,8 +115,7 @@ Return only a valid JSON array."""
     raw = (response.text or "").strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
+        raw = raw.removeprefix("json")
     return json.loads(raw.strip())
 
 

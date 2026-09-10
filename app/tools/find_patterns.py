@@ -1,6 +1,8 @@
 import json
+
 import chromadb
 from sentence_transformers import SentenceTransformer
+
 from app.models import SeverityClass
 
 DISTRIBUTION_PATH = "data/osha_severity_distribution.json"

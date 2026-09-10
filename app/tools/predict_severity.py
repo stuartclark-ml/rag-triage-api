@@ -1,8 +1,8 @@
 from typing import Any
+
 from transformers import pipeline
 
 from app.models import SeverityClass
-
 
 NEEDLESTICK_KEYWORDS = {
     "needle",

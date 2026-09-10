@@ -1,7 +1,9 @@
 from pathlib import Path
+
 import chromadb
 from sentence_transformers import SentenceTransformer
-from rag.build_riddor import extract_regulations, build_chunks, build_schedule_chunks
+
+from rag.build_riddor import build_chunks, build_schedule_chunks, extract_regulations
 
 VECTORSTORE_PATH = Path("vectorstore/riddor")
 COLLECTION_NAME = "riddor"
