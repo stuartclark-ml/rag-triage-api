@@ -1,13 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.config import get_settings
-from app.models import IncidentRequest, TriageResponse, SeverityPrediction, PatternAnalysis, ConfirmedFactsRequest, RiddorAdvisory, CausalAnalysis
-from app.tools.predict_severity import predict_severity
-from app.tools.analyse_causes import analyse_causes
-from app.tools.map_riddor import extract_facts, map_riddor
-from app.tools.find_patterns import find_patterns
 
+from app.config import get_settings
+from app.models import (
+    CausalAnalysis,
+    ConfirmedFactsRequest,
+    IncidentRequest,
+    PatternAnalysis,
+    RiddorAdvisory,
+    SeverityPrediction,
+    TriageResponse,
+)
+from app.tools.analyse_causes import analyse_causes
+from app.tools.find_patterns import find_patterns
+from app.tools.map_riddor import extract_facts, map_riddor
+from app.tools.predict_severity import predict_severity
 
 settings = get_settings()
 

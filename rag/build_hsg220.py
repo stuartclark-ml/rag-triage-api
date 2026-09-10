@@ -1,5 +1,7 @@
-import fitz
 from pathlib import Path
+
+import fitz
+
 from rag.hsg220_embeddings import CHAPTER_EMBEDDINGS
 
 PDF_PATH = Path("data/documents/hsg220.pdf")

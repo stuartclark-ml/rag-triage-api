@@ -1,4 +1,5 @@
 import re
+
 import fitz
 
 NOISE_LINES = {

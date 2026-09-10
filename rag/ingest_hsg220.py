@@ -1,7 +1,9 @@
 from pathlib import Path
+
 import chromadb
 from sentence_transformers import SentenceTransformer
-from rag.build_hsg220 import build_chapters, PDF_PATH
+
+from rag.build_hsg220 import PDF_PATH, build_chapters
 
 VECTORSTORE_PATH = Path("vectorstore/hsg220")
 COLLECTION_NAME = "hsg220"

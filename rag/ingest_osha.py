@@ -2,9 +2,9 @@ import csv
 import json
 from pathlib import Path
 
-from sentence_transformers import SentenceTransformer
 import chromadb
 from chromadb.config import Settings
+from sentence_transformers import SentenceTransformer
 
 CSV_PATH = Path("data/csv/osha_hc_incidents.csv")
 DISTRIBUTION_PATH = Path("data/osha_severity_distribution.json")
